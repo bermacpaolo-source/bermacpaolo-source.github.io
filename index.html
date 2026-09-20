@@ -359,6 +359,7 @@ function seed(){
  const visits=SAMPLE.visits.map(([i,d])=>({id:uid(),pid:p.id,cid:p.clients[i].id,name:p.clients[i].azienda,t:(()=>{const x=new Date(Date.now()-d*DAY);x.setHours(9+i%8,15+i*3%40,0,0);return +x})(),kind:i%3?'manuale':'auto'}));
  return{v:1,projects:[p],active:p.id,visits,settings:{trip:null,radius:10,navApp:'ask'},me:null};
 }
+function emptyProject(name='I miei clienti'){return{id:uid(),name,createdAt:Date.now(),file:{name:name.replace(/[^\w\- ]+/g,'').trim().replace(/\s+/g,'_')+'.xlsx',format:'manual',headers:[]},map:{},clients:[]}}
 function gazFind(name){if(!name)return null;const n=norm(name);const g=GAZ.find(g=>norm(g[0])===n)||GAZ.find(g=>norm(g[0]).startsWith(n)||n.startsWith(norm(g[0])));return g?{name:g[0],prov:g[1],lat:g[2],lon:g[3]}:null}
 function norm(s){return String(s||'').toLowerCase().normalize('NFD').replace(/[̀-ͯ]/g,'').replace(/[^a-z0-9]+/g,' ').trim()}
 const P=()=>S.projects.find(p=>p.id===S.active)||S.projects[0];
@@ -373,8 +374,9 @@ const hasPos=c=>typeof c.lat==='number'&&typeof c.lon==='number';
 let map,view='map',openId=null,near={origin:'me',radius:10},pickFor=null,verifyQ=[],listQ={q:'',f:'all',sort:'az'};
 function toast(msg,ms=2600){const t=$('#toast');t.textContent=msg;t.hidden=false;clearTimeout(toast.h);toast.h=setTimeout(()=>t.hidden=true,ms)}
 function openModal(html){$('#modal').innerHTML=html;$('#scrim').hidden=false;const f=$('#modal').querySelector('input,select,button');f&&f.focus({preventScroll:true})}
+function ask(msg,{ok='Conferma',danger=false,input=null}={}){return new Promise(res=>{ask.res=res;openModal(`<h3>${esc(msg)}</h3>${input!==null?`<div class="field" style="margin:10px 0 4px"><input id="askIn" value="${esc(input)}"></div>`:''}<div class="stack" style="margin-top:14px"><button class="btn ${danger?'signal':'primary'} block" data-act="askOk">${esc(ok)}</button><button class="btn ghost block" data-act="askNo">Annulla</button></div>`);const i=$('#askIn');if(i){i.focus();i.select()}})}
 function closeModal(){$('#scrim').hidden=true;$('#modal').innerHTML=''}
-$('#scrim').addEventListener('click',e=>{if(e.target.id==='scrim'&&!$('#modal').dataset.lock)closeModal()});
+$('#scrim').addEventListener('click',e=>{if(e.target.id==='scrim'&&!$('#modal').dataset.lock){closeModal();if(ask.res){ask.res(false);ask.res=null}}});
 function renderNav(){const n=allClients().filter(needsCheck).length;const tabs=[['map','Mappa',IC.map],['list','Clienti',IC.list],['near','Vicini',IC.near],['history','Cronologia',IC.hist],['more','Elenchi',IC.folder]];
  $('#nav').innerHTML=tabs.map(([k,l,ic])=>`<button data-act="tab" data-v="${k}" ${view===k?'aria-current="page"':''}>${ic}<span>${l}</span>${k==='list'&&n?`<span class="badge num">${n}</span>`:''}</button>`).join('')}
 function setView(v){view=v;['list','near','history','more'].forEach(k=>$('#view-'+k).hidden=k!==v);if(v!=='map')closeSheet();renderNav();if(v==='list')renderList();if(v==='near')renderNear();if(v==='history')renderHistory();if(v==='more')renderMore();if(v==='map'){map.resize()}renderBanner()}
@@ -479,7 +481,7 @@ function renderMore(){const el=$('#view-more');
  el.innerHTML=`<h2>Elenchi e file</h2><p class="sub">Ogni file che carichi diventa un elenco. Puoi modificarlo qui e riscaricarlo aggiornato.</p>
  <div class="stack">${S.projects.map(p=>{const n=p.clients.length,k=p.clients.filter(needsCheck).length;return `<div class="section"><div class="row" style="justify-content:space-between;align-items:flex-start"><div style="min-width:0"><b style="font-size:16px">${esc(p.name)}</b>${p.sample?' <span class="demo">ESEMPIO</span>':''}<div class="meta num">${esc(p.file.name)} · ${n} clienti${k?` · <span style="color:var(--crit)">${k} da confermare</span>`:''}</div></div>${p.id===S.active?'<span class="pill p-ok">In uso</span>':`<button class="btn" data-act="useProj" data-id="${p.id}">Apri</button>`}</div>
  <div class="grid2" style="margin-top:10px"><button class="btn" data-act="exportProj" data-id="${p.id}" data-fmt="orig">${IC.down} Scarica .${esc(p.file.format==='manual'?'xlsx':p.file.format)}</button><button class="btn" data-act="exportProj" data-id="${p.id}" data-fmt="${p.file.format==='xlsx'?'csv':'xlsx'}">${IC.down} Scarica .${p.file.format==='xlsx'?'csv':'xlsx'}</button><button class="btn" data-act="renameProj" data-id="${p.id}">${IC.edit} Rinomina</button><button class="btn danger" data-act="delProj" data-id="${p.id}">${IC.trash} Elimina</button></div></div>`}).join('')}
- <button class="btn primary block" data-act="import">${IC.up} Carica un elenco clienti</button>
+ <div class="grid2"><button class="btn primary" data-act="import">${IC.up} Carica un elenco</button><button class="btn" data-act="newProj">${IC.plus} Elenco vuoto</button></div>${S.projects.some(p=>p.sample)?`<p class="note" style="margin:0">Per togliere i clienti di esempio tocca <b>Elimina</b> sull’elenco “Esempio”. Se non hai altri elenchi, ne resta uno vuoto, “I miei clienti”, dove aggiungere i tuoi.</p>`:''}
  <div class="section"><h3>File consigliati</h3><div class="stack" style="font-size:14px"><div><b>Excel (.xlsx)</b> – il migliore: una riga per cliente, intestazioni in prima riga.</div><div><b>CSV (.csv)</b> – esportabile da qualsiasi gestionale o CRM.</div><div><b>Word (.docx)</b> – va bene se i clienti sono in una tabella.</div><div><b>Rubrica (.vcf)</b> – contatti esportati dal telefono.</div><div style="color:var(--muted)">Colonne utili: Ragione sociale, Referente, Cellulare, Telefono, E-mail, Indirizzo, CAP, Comune, Provincia, Note. PDF e .doc vecchi: salvali prima come .xlsx o .docx.</div></div></div>
  <div class="section"><h3>Backup e Google Drive</h3><p class="meta" style="margin:0 0 10px">Salva tutto (elenchi, modifiche, cronologia) in un unico file da tenere nella cartella Drive “InZona – Progetti”.</p><div class="grid2"><button class="btn" data-act="backup">${IC.down} Salva backup</button><button class="btn" data-act="restore">${IC.up} Ripristina</button></div></div>
  <div class="section"><h3>Impostazioni</h3><p class="meta" style="margin:0">InZona prototipo · dati salvati solo su questo dispositivo</p><button class="btn ghost danger" style="margin-top:8px;padding-left:0" data-act="resetAll">Ripristina i dati di esempio</button></div>
@@ -575,10 +577,12 @@ async function exportProj(id,fmt){const p=S.projects.find(x=>x.id===id);if(fmt==
 
 /* ---------- azioni ---------- */
 const A={
+ askOk:()=>{const i=$('#askIn');const v=i?i.value:true;closeModal();ask.res&&ask.res(v);ask.res=null},
+ askNo:()=>{closeModal();ask.res&&ask.res(false);ask.res=null},
  tab:d=>{near.ids=null;map.circle=null;refreshMarkers();setView(d.v)},
  closeModal, closeSheet:()=>{verifyQ=[];closeSheet()},
  newClient:()=>clientForm(null), editClient:d=>clientForm(d.id), saveClient:d=>saveClient(d.id||null),
- delClient:d=>{const c=findClient(d.id);if(!confirm('Eliminare '+c.azienda+'?'))return;P().clients=P().clients.filter(x=>x.id!==d.id);save();closeModal();closeSheet();refreshMarkers();if(view==='list')renderList();toast('Cliente eliminato')},
+ delClient:async d=>{const c=findClient(d.id);if(!await ask('Eliminare '+c.azienda+'?',{ok:'Sì, elimina',danger:true}))return;P().clients=P().clients.filter(x=>x.id!==d.id);save();closeModal();closeSheet();refreshMarkers();if(view==='list')renderList();toast('Cliente eliminato')},
  navigate:d=>askNavigate(d.id), navGo:d=>{setTimeout(closeModal,300)},
  markVisit:d=>{const c=findClient(d.id);addVisit(c);openCard(c.id,false);toast('Visita a '+c.azienda+' registrata')},
  nearOf:d=>{near.origin=d.id;setView('near')},
@@ -598,13 +602,14 @@ const A={
  cancelPick:()=>{pickFor=null;map.pick=false;renderBanner();map.redraw();if(verifyQ.length)nextVerify()},
  projects:()=>openModal(`<h3>Elenchi clienti</h3><div class="stack">${S.projects.map(p=>`<button class="item" data-act="useProj" data-id="${p.id}"><span class="t">${esc(p.name)}</span><span class="m num">${esc(p.file.name)} · ${p.clients.length} clienti</span><span class="r">${p.id===S.active?'<span class="pill p-ok">In uso</span>':''}</span></button>`).join('')}<button class="btn primary block" data-act="import">${IC.up} Carica un nuovo elenco</button></div>`),
  useProj:d=>{S.active=d.id;save();closeModal();near.ids=null;map.circle=null;closeSheet();renderTop();refreshMarkers();map.fit(allClients().filter(hasPos));if(view==='more')renderMore()},
+ newProj:async()=>{const n=await ask('Nome del nuovo elenco',{ok:'Crea elenco',input:'I miei clienti'});if(!n||!n.trim())return;const p=emptyProject(n.trim());S.projects.push(p);S.active=p.id;save();closeModal();renderTop();refreshMarkers();if(view==='more')renderMore();toast('Elenco “'+p.name+'” creato: aggiungi i clienti con +')},
  import:()=>{closeModal();$('#fileIn').value='';$('#fileIn').click()},
  doImport, exportProj:d=>exportProj(d.id,d.fmt),
- renameProj:d=>{const p=S.projects.find(x=>x.id===d.id);const n=prompt('Nuovo nome dell’elenco',p.name);if(n&&n.trim()){p.name=n.trim();save();renderMore();renderTop()}},
- delProj:d=>{const p=S.projects.find(x=>x.id===d.id);if(!confirm('Eliminare l’elenco “'+p.name+'” e la sua cronologia? Scarica prima il file se ti serve.'))return;S.projects=S.projects.filter(x=>x.id!==d.id);S.visits=S.visits.filter(v=>v.pid!==d.id);if(!S.projects.length){const s=seed();S.projects=s.projects;S.visits=s.visits}if(!S.projects.find(x=>x.id===S.active))S.active=S.projects[0].id;save();renderMore();renderTop();refreshMarkers()},
+ renameProj:async d=>{const p=S.projects.find(x=>x.id===d.id);const n=await ask('Nuovo nome dell’elenco',{ok:'Salva',input:p.name});if(n&&n.trim()){p.name=n.trim();save();renderMore();renderTop()}},
+ delProj:async d=>{const p=S.projects.find(x=>x.id===d.id);if(!await ask('Eliminare l’elenco “'+p.name+'” e la sua cronologia?',{ok:'Sì, elimina',danger:true}))return;S.projects=S.projects.filter(x=>x.id!==d.id);S.visits=S.visits.filter(v=>v.pid!==d.id);if(!S.projects.length)S.projects.push(emptyProject());if(!S.projects.find(x=>x.id===S.active))S.active=S.projects[0].id;save();renderMore();renderTop();refreshMarkers()},
  backup:()=>saveFile('InZona_backup_'+new Date().toISOString().slice(0,10)+'.json',JSON.stringify(S,null,1)),
  restore:()=>{$('#backupIn').value='';$('#backupIn').click()},
- resetAll:()=>{if(!confirm('Cancellare tutti i dati e ricaricare l’esempio?'))return;const t=S.settings.trip;S=seed();S.settings.trip=t;save();renderTop();refreshMarkers();renderMore();map.fit(allClients().filter(hasPos))},
+ resetAll:async()=>{if(!await ask('Cancellare tutti i dati e ricaricare l’esempio?',{ok:'Sì, ricarica',danger:true}))return;const t=S.settings.trip;S=seed();S.settings.trip=t;save();renderTop();refreshMarkers();renderMore();map.fit(allClients().filter(hasPos))},
 };
 document.addEventListener('click',e=>{const a=e.target.closest('[data-act]');if(!a||!A[a.dataset.act])return;if(a.tagName!=='A')e.preventDefault();A[a.dataset.act](a.dataset,a)});
 $('#fileIn').addEventListener('change',e=>{const f=e.target.files[0];if(f)onFile(f)});
