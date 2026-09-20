@@ -1,1 +1,8 @@
- 
+ [{
+  "relation": ["delegate_permission/common.handle_all_urls"],
+  "target": {
+    "namespace": "android_app",
+    "package_name": "it.bermac.inzona",
+    "sha256_cert_fingerprints": ["0F:DE:D7:68:9B:C0:F6:1A:1B:E0:E8:33:10:3A:D6:99:C0:79:0A:A7:FD:CA:66:5C:F0:39:87:7C:66:E2:9E:32"]
+  }
+}]
