@@ -1,0 +1,633 @@
+<!doctype html><!-- v2 --><html lang="it"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover"><meta name="theme-color" content="#0E4D64"><meta name="description" content="Mappa dei clienti per agenti di commercio"><meta name="apple-mobile-web-app-capable" content="yes"><meta name="apple-mobile-web-app-title" content="InZona"><link rel="manifest" href="manifest.webmanifest"><link rel="apple-touch-icon" href="icon-192.png"><link rel="icon" href="icon.svg"><title>InZona</title>
+<link rel="preconnect" href="https://fonts.googleapis.com"><link rel="preconnect" href="https://fonts.gstatic.com" crossorigin><link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Archivo:wdth,wght@62..125,400..800&display=swap">
+<style>
+:root{padding:env(safe-area-inset-top) 0 0}
+:root{
+ --paper:#F3F6F5;--surface:#FFFFFF;--surface-2:#E9EFEE;--ink:#13222C;--muted:#5A6A72;--line:#D5DEDC;
+ --brand:#0E4D64;--brand-ink:#FFFFFF;--signal:#F5A524;--pin-ink:#13222C;
+ --ok:#1F8A5B;--warn:#C98204;--crit:#C2410C;--never:#7B8A92;
+ --map-land:#EEF1EC;--map-water:#A9CFE0;--map-grid:#E2E7E1;--map-road:#C8793A;--map-town:#2E3E48;--map-town-2:#5F6E76;
+ --shadow:0 10px 30px rgba(15,35,45,.16),0 2px 6px rgba(15,35,45,.08);
+ --r:14px;--nav-h:64px;
+ font-family:"Archivo",system-ui,-apple-system,"Segoe UI",Roboto,sans-serif;
+}
+@media (prefers-color-scheme:dark){:root:not([data-theme="light"]){
+ --paper:#0E151A;--surface:#16212A;--surface-2:#1E2B35;--ink:#E6EEF0;--muted:#94A4AC;--line:#2A3944;
+ --brand:#4FB0CC;--brand-ink:#0B1A21;--signal:#F7B84B;--pin-ink:#13222C;
+ --ok:#3DBB82;--warn:#E6A93A;--crit:#F07C4A;--never:#8796A0;
+ --map-land:#1A242C;--map-water:#23475A;--map-grid:#202C35;--map-road:#9B6A3F;--map-town:#D5E0E4;--map-town-2:#9AAAB2;
+ --shadow:0 10px 30px rgba(0,0,0,.45),0 2px 6px rgba(0,0,0,.3);}}
+:root[data-theme="dark"]{
+ --paper:#0E151A;--surface:#16212A;--surface-2:#1E2B35;--ink:#E6EEF0;--muted:#94A4AC;--line:#2A3944;
+ --brand:#4FB0CC;--brand-ink:#0B1A21;--signal:#F7B84B;--pin-ink:#13222C;
+ --ok:#3DBB82;--warn:#E6A93A;--crit:#F07C4A;--never:#8796A0;
+ --map-land:#1A242C;--map-water:#23475A;--map-grid:#202C35;--map-road:#9B6A3F;--map-town:#D5E0E4;--map-town-2:#9AAAB2;
+ --shadow:0 10px 30px rgba(0,0,0,.45),0 2px 6px rgba(0,0,0,.3);}
+html,body{height:100%}
+body{margin:0;background:var(--paper);color:var(--ink);font-size:15px;line-height:1.4;overflow:hidden;-webkit-tap-highlight-color:transparent}
+*{box-sizing:border-box}
+[hidden]{display:none!important}
+button,input,select,textarea{font:inherit;color:inherit}
+button{cursor:pointer}
+:focus-visible{outline:2.5px solid var(--signal);outline-offset:2px}
+.num{font-variant-numeric:tabular-nums}
+#app{position:relative;height:100%;display:grid;grid-template-rows:auto minmax(0,1fr) auto;grid-template-columns:minmax(0,1fr);max-width:560px;margin:0 auto;background:var(--paper);overflow:hidden}
+@media (min-width:700px){#app{border-inline:1px solid var(--line)}}
+/* barra superiore */
+.top{display:flex;align-items:center;gap:10px;padding:10px 16px;background:var(--surface);border-bottom:1px solid var(--line);z-index:5}
+.top>*{min-width:0}
+.brand{display:flex;align-items:center;gap:8px;flex:none}
+.brand svg{width:34px;height:34px}
+.word{font-weight:500;font-size:21px;letter-spacing:-.02em;font-stretch:88%}
+.word b{font-weight:800;color:var(--brand)}
+.proj{flex:1;min-width:0;display:flex;flex-direction:column;align-items:flex-start;border:1px solid var(--line);background:var(--surface-2);border-radius:10px;padding:4px 10px;text-align:left}
+.proj small{font-size:11px;color:var(--muted);letter-spacing:.04em;text-transform:uppercase}
+.proj span{font-weight:600;font-size:13.5px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;max-width:100%}
+.iconbtn{width:42px;height:42px;border-radius:12px;border:1px solid var(--line);background:var(--surface);display:grid;place-items:center;flex:none}
+.iconbtn svg{width:22px;height:22px}
+.iconbtn.primary{background:var(--signal);border-color:var(--signal);color:var(--pin-ink)}
+/* area centrale */
+.stage{position:relative;overflow:hidden}
+#map{position:absolute;inset:0;display:block}
+.float{position:absolute;right:12px;display:flex;flex-direction:column;gap:8px;z-index:3}
+.float .iconbtn{box-shadow:var(--shadow);border-color:transparent}
+.banner{position:absolute;left:12px;right:66px;top:12px;z-index:3;display:flex;gap:10px;align-items:center;padding:10px 12px;border-radius:12px;background:var(--ink);color:var(--surface);box-shadow:var(--shadow);font-size:14px}
+.banner b{color:var(--signal)}
+.banner button{margin-left:auto;border:0;border-radius:9px;padding:7px 11px;background:var(--signal);color:var(--pin-ink);font-weight:700;flex:none}
+.attrib{position:absolute;left:8px;bottom:6px;font-size:10.5px;color:var(--muted);background:color-mix(in srgb,var(--surface) 80%,transparent);padding:2px 6px;border-radius:6px;z-index:2}
+.legend{position:absolute;left:12px;bottom:28px;z-index:2;display:flex;gap:10px;background:var(--surface);border-radius:10px;padding:6px 10px;font-size:11.5px;color:var(--muted);box-shadow:var(--shadow)}
+.legend i{display:inline-block;width:9px;height:9px;border-radius:50%;margin-right:4px;vertical-align:-1px}
+/* pannelli a tutto schermo */
+.panel{position:absolute;inset:0;background:var(--paper);overflow:auto;z-index:4;padding:16px 16px 28px}
+.panel h2{font-size:24px;font-weight:800;letter-spacing:-.02em;margin:4px 0 2px;font-stretch:92%;text-wrap:balance}
+.panel .sub{color:var(--muted);margin:0 0 14px;font-size:14px}
+.stack{display:flex;flex-direction:column;gap:10px}
+.row{display:flex;gap:8px;align-items:center;flex-wrap:wrap}
+.search{width:100%;padding:12px 14px;border-radius:12px;border:1px solid var(--line);background:var(--surface)}
+.chips{display:flex;gap:6px;overflow-x:auto;padding-bottom:2px;scrollbar-width:none}
+.chip{flex:none;border:1px solid var(--line);background:var(--surface);border-radius:999px;padding:6px 12px;font-size:13px;font-weight:600;color:var(--muted)}
+.chip[aria-pressed="true"]{background:var(--brand);border-color:var(--brand);color:var(--brand-ink)}
+.item{display:grid;grid-template-columns:1fr auto;gap:2px 10px;align-items:center;padding:12px 14px;border-radius:12px;background:var(--surface);border:1px solid var(--line);text-align:left;width:100%}
+.item .t{font-weight:700;font-size:15.5px;min-width:0;line-height:1.25}
+.item .m{grid-column:1;color:var(--muted);font-size:13px;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.item .r{grid-row:1/span 2;grid-column:2;text-align:right;font-size:12.5px;color:var(--muted);display:flex;flex-direction:column;align-items:flex-end;gap:4px}
+.dist{font-weight:800;font-size:17px;color:var(--ink);font-stretch:90%}
+.pill{display:inline-flex;align-items:center;gap:5px;border-radius:999px;padding:2px 9px;font-size:12px;font-weight:700;white-space:nowrap}
+.pill::before{content:"";width:7px;height:7px;border-radius:50%;background:currentColor}
+.p-ok{color:var(--ok);background:color-mix(in srgb,var(--ok) 13%,transparent)}
+.p-warn{color:var(--warn);background:color-mix(in srgb,var(--warn) 15%,transparent)}
+.p-never{color:var(--never);background:color-mix(in srgb,var(--never) 15%,transparent)}
+.p-q{color:var(--crit);background:color-mix(in srgb,var(--crit) 12%,transparent)}
+.btn{border:1px solid var(--line);background:var(--surface);border-radius:12px;padding:11px 14px;font-weight:700;display:inline-flex;gap:8px;align-items:center;justify-content:center;text-decoration:none;color:var(--ink)}
+.btn svg{width:18px;height:18px;flex:none}
+.btn.primary{background:var(--brand);border-color:var(--brand);color:var(--brand-ink)}
+.btn.signal{background:var(--signal);border-color:var(--signal);color:var(--pin-ink)}
+.btn.ghost{background:transparent}
+.btn.danger{color:var(--crit)}
+.btn.block{width:100%}
+.grid2{display:grid;grid-template-columns:1fr 1fr;gap:8px}
+.section{background:var(--surface);border:1px solid var(--line);border-radius:var(--r);padding:14px}
+.section h3{margin:0 0 8px;font-size:13px;letter-spacing:.06em;text-transform:uppercase;color:var(--muted)}
+.empty{padding:26px 10px;text-align:center;color:var(--muted)}
+/* navigazione inferiore */
+.nav{display:grid;grid-template-columns:repeat(5,1fr);background:var(--surface);border-top:1px solid var(--line);padding-bottom:env(safe-area-inset-bottom,0px);z-index:6}
+.nav button{border:0;background:none;display:flex;flex-direction:column;align-items:center;gap:3px;padding:9px 2px 8px;font-size:11.5px;font-weight:600;color:var(--muted);position:relative}
+.nav svg{width:23px;height:23px}
+.nav button[aria-current="page"]{color:var(--brand)}
+.nav button[aria-current="page"]::after{content:"";position:absolute;top:0;left:30%;right:30%;height:3px;border-radius:0 0 3px 3px;background:var(--brand)}
+.badge{position:absolute;top:4px;left:calc(50% + 6px);min-width:17px;height:17px;border-radius:9px;background:var(--crit);color:#fff;font-size:10.5px;font-weight:800;display:grid;place-items:center;padding:0 4px}
+/* scheda cliente (bottom sheet) */
+.sheet{position:absolute;left:0;right:0;bottom:0;z-index:7;background:var(--surface);border-radius:20px 20px 0 0;box-shadow:var(--shadow);max-height:78%;overflow:auto;padding:8px 16px 18px;transform:translateY(0);transition:transform .22s ease}
+.sheet.closed{transform:translateY(105%)}
+.grab{width:42px;height:5px;border-radius:3px;background:var(--line);margin:2px auto 10px}
+.card-h{display:flex;gap:10px;align-items:flex-start}
+.card-h h3{margin:0;font-size:21px;line-height:1.15;font-weight:800;letter-spacing:-.015em;font-stretch:92%;text-wrap:balance}
+.card-h .x{margin-left:auto}
+.meta{color:var(--muted);font-size:13.5px;margin-top:3px}
+.kv{display:grid;grid-template-columns:92px 1fr auto;gap:10px 10px;align-items:center;margin:14px 0;font-size:14.5px}
+.kv dt{color:var(--muted);font-size:12.5px;text-transform:uppercase;letter-spacing:.05em}
+.kv dd{margin:0;min-width:0;overflow-wrap:anywhere}
+.kv .acts{display:flex;gap:6px}
+.mini{width:38px;height:38px;border-radius:10px;border:1px solid var(--line);background:var(--surface-2);display:grid;place-items:center;color:var(--brand);text-decoration:none}
+.mini svg{width:19px;height:19px}
+.cta{display:grid;grid-template-columns:1fr 1fr;gap:8px}
+.cta .wide{grid-column:1/-1}
+.note{background:var(--surface-2);border-radius:10px;padding:9px 11px;font-size:13.5px;color:var(--muted)}
+/* modale */
+.scrim{position:absolute;inset:0;background:rgba(8,18,24,.45);z-index:9;display:flex;align-items:flex-end;justify-content:center}
+.modal{background:var(--surface);width:100%;max-height:90%;overflow:auto;border-radius:20px 20px 0 0;padding:18px 16px calc(18px + env(safe-area-inset-bottom,0px));box-shadow:var(--shadow)}
+.modal h3{margin:0 0 6px;font-size:20px;font-weight:800;letter-spacing:-.01em;text-wrap:balance}
+.modal p{margin:0 0 12px;color:var(--muted)}
+.field{display:flex;flex-direction:column;gap:4px}
+.field label{font-size:12.5px;font-weight:700;color:var(--muted);letter-spacing:.03em}
+.field input,.field select,.field textarea{padding:11px 12px;border-radius:10px;border:1px solid var(--line);background:var(--paper);width:100%}
+.field textarea{min-height:70px;resize:vertical}
+.form{display:grid;grid-template-columns:1fr 1fr;gap:10px}
+.form .full{grid-column:1/-1}
+.table{overflow-x:auto;border:1px solid var(--line);border-radius:10px}
+.table table{border-collapse:collapse;font-size:12.5px;min-width:100%}
+.table td,.table th{padding:6px 8px;border-bottom:1px solid var(--line);white-space:nowrap;text-align:left}
+.table th{background:var(--surface-2)}
+.progress{height:8px;border-radius:4px;background:var(--surface-2);overflow:hidden}
+.progress i{display:block;height:100%;background:var(--brand);width:0;transition:width .2s}
+.switch{display:flex;align-items:center;justify-content:space-between;gap:12px}
+.switch input{appearance:none;width:48px;height:28px;border-radius:14px;background:var(--line);position:relative;flex:none;transition:background .15s}
+.switch input::after{content:"";position:absolute;top:3px;left:3px;width:22px;height:22px;border-radius:50%;background:#fff;transition:left .15s;box-shadow:0 1px 3px rgba(0,0,0,.25)}
+.switch input:checked{background:var(--ok)}
+.switch input:checked::after{left:23px}
+.toast{position:absolute;left:50%;top:14px;transform:translateX(-50%);background:var(--ink);color:var(--surface);padding:10px 16px;border-radius:12px;font-weight:600;z-index:20;box-shadow:var(--shadow);max-width:calc(100% - 32px);font-size:14px}
+.day{font-size:12.5px;font-weight:800;letter-spacing:.06em;text-transform:uppercase;color:var(--muted);margin:10px 2px 2px}
+.demo{font-size:12px;color:var(--warn);font-weight:700}
+@media (prefers-reduced-motion:reduce){*{transition:none!important}}
+
+</style>
+</head><body><div id="app">
+ <header class="top">
+  <div class="brand" aria-label="InZona"><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 64"><rect width="64" height="64" rx="15" fill="#0E4D64"/><circle cx="32" cy="29" r="21" fill="none" stroke="#F5A524" stroke-width="2" stroke-dasharray="3 4" opacity=".55"/><circle cx="32" cy="29" r="13" fill="none" stroke="#F5A524" stroke-width="2" opacity=".8"/><circle cx="13" cy="20" r="2.6" fill="#CFE6EC"/><circle cx="50" cy="40" r="2.6" fill="#CFE6EC"/><circle cx="46" cy="14" r="2.2" fill="#CFE6EC"/><path d="M32 49c-1-5-9-11-9-19a9 9 0 0 1 18 0c0 8-8 14-9 19z" fill="#F5A524"/><circle cx="32" cy="30" r="3.4" fill="#0E4D64"/></svg><span class="word">in<b>Zona</b></span></div>
+  <button class="proj" id="projBtn" data-act="projects" aria-label="Cambia elenco clienti"><small>Elenco</small><span id="projName">—</span></button>
+  <button class="iconbtn primary" data-act="newClient" aria-label="Nuovo cliente" id="addBtn"></button>
+ </header>
+ <main class="stage" id="stage">
+  <canvas id="map" aria-label="Mappa dei clienti"></canvas>
+  <div id="banner" hidden></div>
+  <div class="float" style="top:12px" id="floatTop"></div>
+  <div class="legend" id="legend"><span><i style="background:var(--ok)"></i>Visitato &lt;30 gg</span><span><i style="background:var(--warn)"></i>30–90 gg</span><span><i style="background:var(--never)"></i>Da visitare</span></div>
+  <div class="attrib" id="attrib">Mappa in caricamento…</div>
+  <section class="panel" id="view-list" hidden></section>
+  <section class="panel" id="view-near" hidden></section>
+  <section class="panel" id="view-history" hidden></section>
+  <section class="panel" id="view-more" hidden></section>
+  <div class="sheet closed" id="sheet" role="dialog" aria-label="Scheda cliente"></div>
+  <div class="scrim" id="scrim" hidden><div class="modal" id="modal" role="dialog" aria-modal="true"></div></div>
+  <div class="toast" id="toast" hidden></div>
+ </main>
+ <nav class="nav" id="nav"></nav>
+ <input type="file" id="fileIn" hidden accept=".xlsx,.xls,.ods,.csv,.txt,.docx,.vcf">
+ <input type="file" id="backupIn" hidden accept=".json">
+</div>
+
+<script>
+/* ===== Dati di riferimento (offline) ===== */
+// Comuni principali: usati come ripiego quando la ricerca online non è disponibile
+const GAZ = [
+["Milano","MI",45.4642,9.1900,1],["Brescia","BS",45.5416,10.2118,1],["Bergamo","BG",45.6983,9.6773,1],["Cremona","CR",45.1333,10.0227,1],["Mantova","MN",45.1564,10.7914,1],["Lodi","LO",45.3142,9.5037,1],["Pavia","PV",45.1847,9.1582,1],["Verona","VR",45.4384,10.9916,1],["Piacenza","PC",45.0526,9.6930,1],
+["Crema","CR",45.3625,9.6857,2],["Chiari","BS",45.5369,9.9297,2],["Rovato","BS",45.5673,9.9989,2],["Lumezzane","BS",45.6497,10.2647,2],["Desenzano del Garda","BS",45.4711,10.5386,2],["Montichiari","BS",45.4153,10.3924,2],["Ghedi","BS",45.4031,10.2786,2],["Manerbio","BS",45.3547,10.1382,2],["Palazzolo sull'Oglio","BS",45.5967,9.8864,2],["Salò","BS",45.6072,10.5211,2],["Darfo Boario Terme","BS",45.8806,10.1822,2],["Castiglione delle Stiviere","MN",45.3906,10.4889,2],["Suzzara","MN",44.9928,10.7456,2],["Viadana","MN",44.9267,10.5178,2],["Casalmaggiore","CR",44.9894,10.4178,2],["Codogno","LO",45.1600,9.7050,2],["Vigevano","PV",45.3175,8.8553,2],["Voghera","PV",44.9925,9.0092,2],["Treviglio","BG",45.5214,9.5928,2],["Orzinuovi","BS",45.4031,9.9239,2],["Soresina","CR",45.2867,9.8575,2],
+["Gussago","BS",45.5925,10.1569,3],["Castegnato","BS",45.5636,10.1136,3],["Rezzato","BS",45.5125,10.3272,3],["Lonato del Garda","BS",45.4611,10.4803,3],["Leno","BS",45.3689,10.2156,3],["Bagnolo Mella","BS",45.4278,10.1872,3],["Travagliato","BS",45.5236,10.0797,3],["Concesio","BS",45.6053,10.2208,3],["Sarezzo","BS",45.6558,10.2019,3],["Gardone Val Trompia","BS",45.6917,10.1861,3],["Castel Goffredo","MN",45.2972,10.4747,3],["Porto Mantovano","MN",45.1878,10.7869,3],["Curtatone","MN",45.1581,10.7292,3],["Goito","MN",45.2522,10.6694,3],["Asola","MN",45.2208,10.4136,3],["Ostiglia","MN",45.0692,11.1361,3],["Casalbuttano","CR",45.2525,9.9606,3],["Pizzighettone","CR",45.1864,9.7892,3],["Castelleone","CR",45.2956,9.7619,3],["Rivolta d'Adda","CR",45.4700,9.5139,3],["Casalpusterlengo","LO",45.1781,9.6497,3],["Sant'Angelo Lodigiano","LO",45.2356,9.4072,3],["Mortara","PV",45.2503,8.7389,3],["Stradella","PV",45.0747,9.3000,3],["Seriate","BG",45.6853,9.7236,3],["Iseo","BS",45.6600,10.0519,3],["Vobarno","BS",45.6417,10.4986,3],["Calcinato","BS",45.4578,10.4136,3],["Mazzano","BS",45.5200,10.3500,3],["Roncadelle","BS",45.5264,10.1531,3],["Flero","BS",45.4833,10.1753,3],["Castenedolo","BS",45.4700,10.2997,3],["Botticino","BS",45.5433,10.3197,3],["Ospitaletto","BS",45.5547,10.0736,3],["Verolanuova","BS",45.3272,10.0756,3],["Pontevico","BS",45.2728,10.0928,3],["Carpenedolo","BS",45.3647,10.4319,3],["Bedizzole","BS",45.5100,10.4200,3],["Borgosatollo","BS",45.4769,10.2400,3],["Cologne","BS",45.5831,9.9425,3],["Erbusco","BS",45.5972,9.9708,3]
+];
+// Geografia schematica (fiumi, laghi, autostrade) per la mappa offline
+const GEO = {
+ rivers:[
+  [[45.05,8.6],[45.10,9.0],[45.14,9.2],[45.12,9.45],[45.05,9.7],[45.10,9.95],[45.12,10.05],[45.02,10.3],[44.97,10.45],[44.95,10.6],[45.02,10.85],[45.05,11.1],[45.0,11.4]],
+  [[45.87,9.40],[45.6,9.5],[45.47,9.51],[45.30,9.52],[45.17,9.75],[45.12,9.88]],
+  [[45.67,9.96],[45.55,9.88],[45.40,9.95],[45.27,10.10],[45.18,10.35],[45.05,10.60],[45.03,10.66]],
+  [[45.44,10.69],[45.30,10.70],[45.16,10.79],[45.06,10.93]],
+  [[45.72,10.20],[45.54,10.21],[45.40,10.20],[45.25,10.13]],
+  [[45.72,10.50],[45.55,10.43],[45.42,10.43],[45.30,10.42],[45.15,10.45]],
+  [[45.75,8.60],[45.50,8.80],[45.30,8.90],[45.18,9.16],[45.13,9.25]]
+ ],
+ lakes:[
+  [[45.87,10.84],[45.80,10.78],[45.70,10.70],[45.62,10.61],[45.55,10.57],[45.47,10.53],[45.44,10.60],[45.44,10.70],[45.50,10.73],[45.57,10.72],[45.66,10.73],[45.75,10.80],[45.86,10.88]],
+  [[45.85,10.08],[45.78,10.06],[45.70,10.02],[45.65,10.00],[45.66,10.06],[45.72,10.10],[45.79,10.12],[45.86,10.11]]
+ ],
+ roads:[
+  ["A4",[[45.51,9.22],[45.55,9.45],[45.62,9.62],[45.60,9.85],[45.56,10.0],[45.52,10.20],[45.49,10.40],[45.45,10.55],[45.44,10.72],[45.42,10.98]]],
+  ["A21",[[45.52,10.20],[45.40,10.15],[45.25,10.07],[45.15,10.00],[45.07,9.75]]],
+  ["A1",[[45.45,9.28],[45.33,9.45],[45.18,9.62],[45.05,9.70],[44.95,9.95]]],
+  ["A22",[[45.42,10.98],[45.20,10.85],[45.10,10.80],[44.90,10.85]]],
+  ["A35",[[45.50,9.30],[45.52,9.60],[45.52,9.90],[45.52,10.12]]],
+  ["A7",[[45.43,9.18],[45.20,9.10],[45.00,9.00]]]
+ ]
+};
+// Elenco di esempio (aziende inventate) per mostrare l'app al primo avvio
+const SAMPLE = {
+ name:"Esempio – Clienti Lombardia est",
+ file:{name:"clienti_esempio.xlsx",format:"xlsx",headers:["Ragione sociale","Referente","Cellulare","Telefono","E-mail","Indirizzo","CAP","Comune","Prov","Settore","Note"]},
+ rows:[
+  ["Termoplast Mella S.r.l.","Giorgio Ferrari","333 100 2001","030 210 0101","acquisti@termoplast-esempio.it","Via dell'Artigianato 12","25030","Castegnato","BS","Stampaggio plastica","Chiller 2 linee, valutano ampliamento",45.5602,10.1231],
+  ["Pressofusioni Valtrompia S.p.A.","Laura Bettoni","333 100 2002","030 210 0102","l.bettoni@pvt-esempio.it","Via Industriale 45","25065","Lumezzane","BS","Pressofusione","",45.6441,10.2553],
+  ["Caseificio Due Fiumi","Marco Rizzi","333 100 2003","0372 210 103","info@duefiumi-esempio.it","Strada Provinciale 33","26100","Cremona","CR","Alimentare","Raffreddamento siero, contatto dopo le 14",45.1432,10.0561],
+  ["Vetreria Benaco S.r.l.","Chiara Zanetti","333 100 2004","030 210 0104","","Via Mantova 8","25017","Lonato del Garda","BS","Vetro","",45.4552,10.4912],
+  ["Laser Tagli Franciacorta","Paolo Belotti","333 100 2005","030 210 0105","ufficio@lasertagli-esempio.it","Via Cavour 88","25038","Rovato","BS","Taglio laser","Sorgente laser 12 kW",45.5601,10.0124],
+  ["Salumificio Gonzaga","Andrea Mori","333 100 2006","0376 210 106","a.mori@gonzaga-esempio.it","Via Learco Guerra 3","46029","Suzzara","MN","Alimentare","",45.0011,10.7329],
+  ["Estrusi Oglio S.r.l.","Federica Guerini","333 100 2007","030 210 0107","","Via Brescia 140","25036","Palazzolo sull'Oglio","BS","Estrusione alluminio","",45.5893,9.8977],
+  ["Birrificio Colline Moreniche","Luca Tosi","333 100 2008","0376 210 108","luca@colline-esempio.it","Via Solferino 21","46043","Castiglione delle Stiviere","MN","Bevande","Fermentatori, chiller glicole",45.3968,10.4971],
+  ["Galvanica Bassa Bresciana","Roberto Pasini","333 100 2009","030 210 0109","","Via Artigiani 5","25025","Manerbio","BS","Trattamenti superficiali","",45.3601,10.1466],
+  ["Farmaceutici Lodigiani S.p.A.","Elena Corsi","333 100 2010","0371 210 110","e.corsi@farmalodi-esempio.it","Via dell'Innovazione 1","26900","Lodi","LO","Farmaceutico","Gara in corso",45.3050,9.5164],
+  ["Stampi Garda Tecnica","Simone Rossi","333 100 2011","030 210 0111","","Via Dugali 14","25015","Desenzano del Garda","BS","Stampi","",45.4598,10.5264],
+  ["Oleodinamica Chiese","Davide Tonoli","333 100 2012","030 210 0112","d.tonoli@olechiese-esempio.it","Via Mazzini 60","25018","Montichiari","BS","Oleodinamica","",45.4232,10.3811],
+  ["Latteria Soresinese Nuova","Ilaria Ghisi","333 100 2013","0374 210 113","","Via dei Mille 2","26015","Soresina","CR","Alimentare","",45.2911,9.8502],
+  ["Plastiche Mantovane S.r.l.","Stefano Arrighi","333 100 2014","0376 210 114","","Via Europa 30","46047","Porto Mantovano","MN","Stampaggio plastica","",45.1953,10.7942],
+  ["Carpenteria Chiari Sud","Valentina Ome","333 100 2015","030 210 0115","v.ome@chiarisud-esempio.it","Via Brescia 210","25032","Chiari","BS","Carpenteria","",45.5306,9.9468],
+  ["Iniezione Polimeri Ghedi","Nicola Bonetti","333 100 2016","030 210 0116","","Via Industriale 9","25016","Ghedi","BS","Stampaggio plastica","",45.4109,10.2912],
+  ["Cantina Colli di Rezzato","Martina Faini","333 100 2017","030 210 0117","","Via Garibaldi 44","25086","Rezzato","BS","Vinicolo","Vendemmia: passare dopo ottobre",45.5178,10.3355],
+  ["Fonderia Adda Tecnologie","Alberto Riva","333 100 2018","0373 210 118","a.riva@addatec-esempio.it","Via Milano 77","26013","Crema","CR","Fonderia","",45.3574,9.6702],
+  ["Imballaggi Concesio","Sara Pedretti","333 100 2019","030 210 0119","","Via Europa 17","25062","Concesio","BS","Imballaggi","",null,null],
+  ["Tecnofreddo Bagnolo","Mattia Zani","333 100 2020","030 210 0120","","","","Bagnolo Mella","BS","Installatore","Possibile partner installatore",null,null]
+ ],
+ geo:{18:"confirm",19:"approx"},
+ visits:[[0,6],[0,48],[1,19],[4,33],[2,75],[7,12],[11,95],[14,4],[16,27]]
+};
+
+/* ===== Motore mappa (canvas, senza dipendenze) ===== */
+const TS=256, D2R=Math.PI/180;
+const W=z=>TS*Math.pow(2,z);
+const lon2x=(lon,z)=>(lon+180)/360*W(z);
+const lat2y=(lat,z)=>{const s=Math.sin(lat*D2R);return (0.5-Math.log((1+s)/(1-s))/(4*Math.PI))*W(z)};
+const x2lon=(x,z)=>x/W(z)*360-180;
+const y2lat=(y,z)=>{const n=Math.PI-2*Math.PI*y/W(z);return Math.atan(Math.sinh(n))/D2R};
+function haversine(a,b){const R=6371,dLa=(b.lat-a.lat)*D2R,dLo=(b.lon-a.lon)*D2R;const s=Math.sin(dLa/2)**2+Math.cos(a.lat*D2R)*Math.cos(b.lat*D2R)*Math.sin(dLo/2)**2;return 2*R*Math.asin(Math.sqrt(s))}
+
+class MapView{
+ constructor(canvas,o={}){
+  this.c=canvas;this.ctx=canvas.getContext('2d');
+  this.center={lat:45.40,lon:10.15};this.zoom=9;this.minZ=5;this.maxZ=18.5;
+  this.markers=[];this.selected=null;this.me=null;this.circle=null;
+  this.tiles=new Map();this.tileOk=0;this.tileErr=0;this.tileMode='try';
+  this.onTap=o.onTap||(()=>{});this.onMarker=o.onMarker||(()=>{});this.onStatus=o.onStatus||(()=>{});
+  this.ptrs=new Map();this.lastTap=0;this.anim=null;
+  this.colors={};
+  new ResizeObserver(()=>this.resize()).observe(canvas.parentElement);
+  this.bind();this.resize();
+ }
+ css(n){return getComputedStyle(document.documentElement).getPropertyValue(n).trim()}
+ readColors(){['--map-land','--map-water','--map-grid','--map-road','--map-town','--map-town-2','--ink','--surface','--brand','--signal','--muted','--line','--ok','--warn','--never','--pin-ink'].forEach(k=>this.colors[k]=this.css(k));this.dark=matchMedia('(prefers-color-scheme: dark)').matches&&document.documentElement.dataset.theme!=='light'||document.documentElement.dataset.theme==='dark'}
+ resize(){const r=this.c.parentElement.getBoundingClientRect();this.dpr=Math.min(window.devicePixelRatio||1,2.5);this.w=r.width;this.h=r.height;this.c.width=Math.round(r.width*this.dpr);this.c.height=Math.round(r.height*this.dpr);this.c.style.width=r.width+'px';this.c.style.height=r.height+'px';this.redraw()}
+ redraw(){if(this.raf)return;this.raf=requestAnimationFrame(()=>{this.raf=0;this.draw()})}
+ toScreen(lat,lon,z=this.zoom){return{x:lon2x(lon,z)-lon2x(this.center.lon,z)+this.w/2,y:lat2y(lat,z)-lat2y(this.center.lat,z)+this.h/2}}
+ toLatLon(x,y,z=this.zoom){const cx=lon2x(this.center.lon,z)+x-this.w/2,cy=lat2y(this.center.lat,z)+y-this.h/2;return{lat:y2lat(cy,z),lon:x2lon(cx,z)}}
+ setView(lat,lon,z){this.center={lat,lon};if(z!=null)this.zoom=Math.max(this.minZ,Math.min(this.maxZ,z));this.redraw()}
+ zoomAt(nz,sx,sy){nz=Math.max(this.minZ,Math.min(this.maxZ,nz));const p=this.toLatLon(sx,sy);this.zoom=nz;const q=this.toScreen(p.lat,p.lon);const cx=lon2x(this.center.lon,nz)+(q.x-sx),cy=lat2y(this.center.lat,nz)+(q.y-sy);this.center={lat:y2lat(cy,nz),lon:x2lon(cx,nz)};this.redraw()}
+ flyTo(lat,lon,z=this.zoom,ms=450){const a={...this.center,z:this.zoom},b={lat,lon,z},t0=performance.now();if(matchMedia('(prefers-reduced-motion: reduce)').matches)ms=0;cancelAnimationFrame(this.anim);const step=t=>{let k=ms?Math.min(1,(t-t0)/ms):1;const e=k<.5?2*k*k:1-Math.pow(-2*k+2,2)/2;this.center={lat:a.lat+(b.lat-a.lat)*e,lon:a.lon+(b.lon-a.lon)*e};this.zoom=a.z+(b.z-a.z)*e;this.draw();if(k<1)this.anim=requestAnimationFrame(step)};this.anim=requestAnimationFrame(step)}
+ fit(pts,pad=60,maxZ=13){if(!pts.length)return;if(pts.length===1)return this.flyTo(pts[0].lat,pts[0].lon,Math.min(maxZ,13));let la=[Infinity,-Infinity],lo=[Infinity,-Infinity];pts.forEach(p=>{la[0]=Math.min(la[0],p.lat);la[1]=Math.max(la[1],p.lat);lo[0]=Math.min(lo[0],p.lon);lo[1]=Math.max(lo[1],p.lon)});let z=maxZ;for(;z>this.minZ;z-=.25){const dx=lon2x(lo[1],z)-lon2x(lo[0],z),dy=lat2y(la[0],z)-lat2y(la[1],z);if(dx<this.w-pad*2&&dy<this.h-pad*2.4)break}this.flyTo((la[0]+la[1])/2,(lo[0]+lo[1])/2,z)}
+ kmToPx(km){return km*1000/(156543.03*Math.cos(this.center.lat*D2R)/Math.pow(2,this.zoom))}
+ /* --- tile --- */
+ tile(z,x,y){const k=z+'/'+x+'/'+y;let t=this.tiles.get(k);if(t)return t;if(this.tileMode==='off')return null;const img=new Image();t={img,ok:false};img.onload=()=>{t.ok=true;this.tileOk++;if(this.tileMode!=='on'){this.tileMode='on';this.onStatus('tiles')}this.redraw()};img.onerror=()=>{this.tileErr++;if(!this.tileOk&&this.tileErr>4){this.tileMode='off';this.onStatus('offline');this.redraw()}};img.src=`https://tile.openstreetmap.org/${z}/${x}/${y}.png`;this.tiles.set(k,t);if(this.tiles.size>400){const f=this.tiles.keys().next().value;this.tiles.delete(f)}return t}
+ drawTiles(ctx){const tz=Math.max(0,Math.min(19,Math.round(this.zoom))),sc=Math.pow(2,this.zoom-tz);const cx=lon2x(this.center.lon,tz),cy=lat2y(this.center.lat,tz);const x0=cx-this.w/2/sc,y0=cy-this.h/2/sc;const n=Math.pow(2,tz);const a=Math.floor(x0/TS),b=Math.floor((x0+this.w/sc)/TS),c=Math.floor(y0/TS),d=Math.floor((y0+this.h/sc)/TS);if(this.dark)ctx.filter='invert(1) hue-rotate(180deg) brightness(.92) contrast(.88) saturate(.7)';for(let x=a;x<=b;x++)for(let y=c;y<=d;y++){if(y<0||y>=n)continue;const t=this.tile(tz,((x%n)+n)%n,y);if(t&&t.ok)ctx.drawImage(t.img,Math.round((x*TS-x0)*sc),Math.round((y*TS-y0)*sc),Math.ceil(TS*sc)+1,Math.ceil(TS*sc)+1)}ctx.filter='none'}
+ /* --- mappa schematica offline --- */
+ drawSchematic(ctx){const C=this.colors;ctx.fillStyle=C['--map-land'];ctx.fillRect(0,0,this.w,this.h);
+  const step=this.zoom>=11?0.05:this.zoom>=9?0.1:0.5;const tl=this.toLatLon(0,0),br=this.toLatLon(this.w,this.h);ctx.strokeStyle=C['--map-grid'];ctx.lineWidth=1;ctx.beginPath();for(let lo=Math.ceil(tl.lon/step)*step;lo<br.lon;lo+=step){const p=this.toScreen(0,lo);ctx.moveTo(Math.round(p.x)+.5,0);ctx.lineTo(Math.round(p.x)+.5,this.h)}for(let la=Math.ceil(br.lat/step)*step;la<tl.lat;la+=step){const p=this.toScreen(la,0);ctx.moveTo(0,Math.round(p.y)+.5);ctx.lineTo(this.w,Math.round(p.y)+.5)}ctx.stroke();
+  const line=pts=>{ctx.beginPath();pts.forEach((q,i)=>{const p=this.toScreen(q[0],q[1]);i?ctx.lineTo(p.x,p.y):ctx.moveTo(p.x,p.y)})};
+  ctx.fillStyle=C['--map-water'];GEO.lakes.forEach(l=>{line(l);ctx.closePath();ctx.fill()});
+  ctx.strokeStyle=C['--map-water'];ctx.lineJoin=ctx.lineCap='round';ctx.lineWidth=Math.max(1.5,this.zoom-7);GEO.rivers.forEach(r=>{line(r);ctx.stroke()});
+  ctx.strokeStyle=C['--map-road'];ctx.lineWidth=Math.max(2,this.zoom-6.5);GEO.roads.forEach(r=>{line(r[1]);ctx.stroke()});
+  ctx.font='600 10px Archivo, system-ui, sans-serif';GEO.roads.forEach(r=>{const m=r[1][Math.floor(r[1].length/2)],p=this.toScreen(m[0],m[1]);const tw=ctx.measureText(r[0]).width+8;ctx.fillStyle=C['--map-road'];ctx.beginPath();ctx.roundRect(p.x-tw/2,p.y-8,tw,16,3);ctx.fill();ctx.fillStyle='#fff';ctx.textAlign='center';ctx.textBaseline='middle';ctx.fillText(r[0],p.x,p.y+.5)});
+  const lvl=this.zoom<8.5?1:this.zoom<10?2:3;GAZ.forEach(g=>{if(g[4]>lvl)return;const p=this.toScreen(g[2],g[3]);if(p.x<-80||p.x>this.w+80||p.y<-20||p.y>this.h+20)return;const big=g[4]===1;ctx.fillStyle=big?C['--map-town']:C['--map-town-2'];ctx.beginPath();ctx.arc(p.x,p.y,big?4:2.5,0,7);ctx.fill();ctx.font=(big?'700 12px':'500 10.5px')+' Archivo, system-ui, sans-serif';ctx.textAlign='left';ctx.textBaseline='middle';ctx.fillText(big?g[0].toUpperCase():g[0],p.x+6,p.y)});ctx.textAlign='left'}
+ /* --- disegno --- */
+ draw(){const ctx=this.ctx;if(!this.colors['--ink'])this.readColors();ctx.setTransform(this.dpr,0,0,this.dpr,0,0);this.drawSchematic(ctx);if(this.tileMode!=='off')this.drawTiles(ctx);const C=this.colors;
+  if(this.circle){const p=this.toScreen(this.circle.lat,this.circle.lon),r=this.kmToPx(this.circle.km);ctx.fillStyle=C['--brand']+'1f';ctx.strokeStyle=C['--brand'];ctx.lineWidth=1.5;ctx.setLineDash([6,5]);ctx.beginPath();ctx.arc(p.x,p.y,r,0,7);ctx.fill();ctx.stroke();ctx.setLineDash([]);
+   ctx.font='700 11px Archivo, system-ui, sans-serif';const t=this.circle.km+' km';const tw=ctx.measureText(t).width+10;ctx.fillStyle=C['--brand'];ctx.beginPath();ctx.roundRect(p.x-tw/2,p.y-r-10,tw,20,10);ctx.fill();ctx.fillStyle=C['--surface'];ctx.textAlign='center';ctx.textBaseline='middle';ctx.fillText(t,p.x,p.y-r);ctx.textAlign='left'}
+  // marcatori
+  this.hits=[];const rects=[];const showLabels=this.zoom>=7.8;const list=[...this.markers].sort((a,b)=>(a.id===this.selected)-(b.id===this.selected)||(b.pri||0)-(a.pri||0));
+  const pos=list.map(m=>({m,p:this.toScreen(m.lat,m.lon)})).filter(o=>o.p.x>-150&&o.p.x<this.w+150&&o.p.y>-40&&o.p.y<this.h+60);
+  ctx.font='600 12px Archivo, system-ui, sans-serif';
+  // prima le etichette con priorità (selezionato, poi in ordine) per evitare sovrapposizioni
+  const order=[...pos].reverse();const labelOf=new Map();
+  order.forEach(o=>{if(!showLabels&&o.m.id!==this.selected)return;const t=o.m.label.length>26?o.m.label.slice(0,25)+'…':o.m.label;const tw=ctx.measureText(t).width+14;const r={x:o.p.x+12,y:o.p.y-31,w:tw,h:22};if(o.m.id!==this.selected&&rects.some(q=>r.x<q.x+q.w&&r.x+r.w>q.x&&r.y<q.y+q.h&&r.y+r.h>q.y))return;rects.push(r);labelOf.set(o.m,{r,t})});
+  pos.forEach(o=>{const {m,p}=o;const sel=m.id===this.selected;const col=m.color||C['--brand'];const s=sel?1.25:1;
+   ctx.save();ctx.translate(p.x,p.y);ctx.scale(s,s);ctx.globalAlpha=m.dim?.35:1;
+   ctx.fillStyle='rgba(0,0,0,.18)';ctx.beginPath();ctx.ellipse(0,1,5,2,0,0,7);ctx.fill();
+   ctx.fillStyle=col;ctx.strokeStyle=C['--surface'];ctx.lineWidth=2;ctx.beginPath();ctx.moveTo(0,0);ctx.bezierCurveTo(-3,-7,-9,-10,-9,-18);ctx.arc(0,-18,9,Math.PI,0);ctx.bezierCurveTo(9,-10,3,-7,0,0);ctx.closePath();ctx.fill();ctx.stroke();
+   ctx.fillStyle=C['--surface'];ctx.beginPath();ctx.arc(0,-18,3.4,0,7);ctx.fill();
+   if(m.flag){ctx.fillStyle=C['--signal'];ctx.strokeStyle=C['--surface'];ctx.beginPath();ctx.arc(7,-26,5,0,7);ctx.fill();ctx.stroke();ctx.fillStyle=C['--pin-ink'];ctx.font='800 8px Archivo, system-ui';ctx.textAlign='center';ctx.textBaseline='middle';ctx.fillText('?',7,-25.5);ctx.textAlign='left'}
+   ctx.restore();this.hits.push({m,x:p.x-11*s,y:p.y-30*s,w:22*s,h:32*s})});
+  ctx.font='600 12px Archivo, system-ui, sans-serif';ctx.textBaseline='middle';
+  pos.forEach(o=>{const L=labelOf.get(o.m);if(!L)return;const {r,t}=L;const sel=o.m.id===this.selected;ctx.globalAlpha=o.m.dim?.45:1;ctx.fillStyle=sel?C['--ink']:C['--surface'];ctx.strokeStyle=sel?C['--ink']:C['--line'];ctx.lineWidth=1;ctx.beginPath();ctx.roundRect(r.x,r.y,r.w,r.h,6);ctx.fill();ctx.stroke();ctx.fillStyle=sel?C['--surface']:C['--ink'];ctx.fillText(t,r.x+7,r.y+r.h/2+.5);ctx.globalAlpha=1;this.hits.push({m:o.m,...r})});
+  if(this.me){const p=this.toScreen(this.me.lat,this.me.lon);ctx.fillStyle='#2f7cf61f';ctx.beginPath();ctx.arc(p.x,p.y,18,0,7);ctx.fill();ctx.fillStyle='#2f7cf6';ctx.strokeStyle='#fff';ctx.lineWidth=3;ctx.beginPath();ctx.arc(p.x,p.y,7,0,7);ctx.fill();ctx.stroke()}
+  if(this.pick){ctx.strokeStyle=C['--signal'];ctx.lineWidth=2;const x=this.w/2,y=this.h/2;ctx.beginPath();ctx.arc(x,y,14,0,7);ctx.moveTo(x-24,y);ctx.lineTo(x-6,y);ctx.moveTo(x+6,y);ctx.lineTo(x+24,y);ctx.moveTo(x,y-24);ctx.lineTo(x,y-6);ctx.moveTo(x,y+6);ctx.lineTo(x,y+24);ctx.stroke()}
+ }
+ hitTest(x,y){for(let i=this.hits.length-1;i>=0;i--){const h=this.hits[i];if(x>=h.x-4&&x<=h.x+h.w+4&&y>=h.y-4&&y<=h.y+h.h+4)return h.m}return null}
+ /* --- gesti: trascina, pizzica, rotella, doppio tocco --- */
+ bind(){const c=this.c;c.style.touchAction='none';
+  const pt=e=>{const r=c.getBoundingClientRect();return{x:e.clientX-r.left,y:e.clientY-r.top}};
+  c.addEventListener('pointerdown',e=>{c.setPointerCapture(e.pointerId);cancelAnimationFrame(this.anim);this.ptrs.set(e.pointerId,pt(e));this.startGesture();if(this.ptrs.size===1){this.down={...pt(e),t:performance.now(),moved:0}}});
+  c.addEventListener('pointermove',e=>{if(!this.ptrs.has(e.pointerId))return;this.ptrs.set(e.pointerId,pt(e));const g=this.g;if(!g)return;const ps=[...this.ptrs.values()];
+   if(ps.length===1&&g.n===1){const dx=ps[0].x-g.p[0].x,dy=ps[0].y-g.p[0].y;if(this.down)this.down.moved=Math.max(this.down.moved,Math.hypot(dx,dy));this.center={lon:x2lon(g.cx-dx,this.zoom),lat:y2lat(g.cy-dy,this.zoom)};this.redraw()}
+   else if(ps.length>=2&&g.n>=2){const d=Math.hypot(ps[0].x-ps[1].x,ps[0].y-ps[1].y),mx=(ps[0].x+ps[1].x)/2,my=(ps[0].y+ps[1].y)/2;const nz=Math.max(this.minZ,Math.min(this.maxZ,g.z+Math.log2(d/g.d)));this.zoom=nz;const wx=lon2x(g.anchor.lon,nz),wy=lat2y(g.anchor.lat,nz);this.center={lon:x2lon(wx-(mx-this.w/2),nz),lat:y2lat(wy-(my-this.h/2),nz)};if(this.down)this.down.moved=99;this.redraw()}});
+  const up=e=>{if(!this.ptrs.has(e.pointerId))return;this.ptrs.delete(e.pointerId);if(this.ptrs.size===0&&this.down){const d=this.down;this.down=null;if(d.moved<8&&performance.now()-d.t<500){const now=performance.now();const m=this.hitTest(d.x,d.y);if(m){this.onMarker(m)}else if(now-this.lastTap<320){this.zoomAt(Math.round(this.zoom)+1,d.x,d.y);this.lastTap=0}else{this.lastTap=now;const ll=this.toLatLon(d.x,d.y);setTimeout(()=>{if(this.lastTap===now)this.onTap(ll,d)},this.pick?0:260)}}}this.startGesture()};
+  c.addEventListener('pointerup',up);c.addEventListener('pointercancel',up);
+  c.addEventListener('wheel',e=>{e.preventDefault();const p=pt(e);this.zoomAt(this.zoom-e.deltaY*(e.ctrlKey?0.01:0.0025),p.x,p.y)},{passive:false});
+  matchMedia('(prefers-color-scheme: dark)').addEventListener('change',()=>{this.colors={};this.redraw()});
+ }
+ startGesture(){const ps=[...this.ptrs.values()];if(!ps.length){this.g=null;return}const g={n:ps.length,p:ps.map(p=>({...p})),z:this.zoom,cx:lon2x(this.center.lon,this.zoom),cy:lat2y(this.center.lat,this.zoom)};if(ps.length>=2){g.d=Math.hypot(ps[0].x-ps[1].x,ps[0].y-ps[1].y)||1;g.anchor=this.toLatLon((ps[0].x+ps[1].x)/2,(ps[0].y+ps[1].y)/2)}this.g=g}
+}
+
+/* ===== InZona — app ===== */
+const I=(p)=>`<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">${p}</svg>`;
+const IC={
+ map:I('<path d="M9 4 3 6v14l6-2 6 2 6-2V4l-6 2-6-2z"/><path d="M9 4v14M15 6v14"/>'),
+ list:I('<path d="M8 6h13M8 12h13M8 18h13"/><circle cx="3.5" cy="6" r="1"/><circle cx="3.5" cy="12" r="1"/><circle cx="3.5" cy="18" r="1"/>'),
+ near:I('<circle cx="12" cy="12" r="9"/><circle cx="12" cy="12" r="5"/><circle cx="12" cy="12" r="1.3" fill="currentColor"/>'),
+ hist:I('<path d="M3 12a9 9 0 1 0 3-6.7"/><path d="M3 4v4h4"/><path d="M12 7v5l3 2"/>'),
+ folder:I('<path d="M3 7a2 2 0 0 1 2-2h4l2 2h8a2 2 0 0 1 2 2v8a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"/>'),
+ plus:I('<path d="M12 5v14M5 12h14"/>'),
+ locate:I('<circle cx="12" cy="12" r="4"/><path d="M12 2v3M12 19v3M2 12h3M19 12h3"/>'),
+ fit:I('<path d="M4 9V4h5M20 9V4h-5M4 15v5h5M20 15v5h-5"/>'),
+ phone:I('<path d="M5 4h4l2 5-2.5 1.5a11 11 0 0 0 5 5L15 13l5 2v4a2 2 0 0 1-2 2A16 16 0 0 1 3 6a2 2 0 0 1 2-2"/>'),
+ chat:I('<path d="M21 12a8 8 0 0 1-11.6 7.1L4 20l1-4.6A8 8 0 1 1 21 12z"/>'),
+ mail:I('<rect x="3" y="5" width="18" height="14" rx="2"/><path d="m3 7 9 6 9-6"/>'),
+ go:I('<path d="M3 11 21 3l-8 18-2-8z"/>'),
+ check:I('<path d="M20 6 9 17l-5-5"/>'),
+ edit:I('<path d="M4 20h4L19 9l-4-4L4 16z"/><path d="m14 6 4 4"/>'),
+ x:I('<path d="M18 6 6 18M6 6l12 12"/>'),
+ down:I('<path d="M12 3v12M7 10l5 5 5-5"/><path d="M5 21h14"/>'),
+ up:I('<path d="M12 21V9M7 14l5-5 5 5"/><path d="M5 3h14"/>'),
+ route:I('<circle cx="6" cy="19" r="2"/><circle cx="18" cy="5" r="2"/><path d="M8 19h8a3 3 0 0 0 0-6H8a3 3 0 0 1 0-6h8"/>'),
+ pin:I('<path d="M12 21s-7-6-7-12a7 7 0 0 1 14 0c0 6-7 12-7 12z"/><circle cx="12" cy="9" r="2.5"/>'),
+ trash:I('<path d="M4 7h16M10 11v6M14 11v6M6 7l1 13h10l1-13M9 7V4h6v3"/>'),
+};
+const $=s=>document.querySelector(s);
+const esc=s=>String(s??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+const uid=()=>Math.random().toString(36).slice(2,10)+Date.now().toString(36).slice(-4);
+const DAY=864e5;
+const fmtKm=k=>k<1?Math.round(k*1000)+' m':(k<10?k.toFixed(1).replace('.',','):Math.round(k))+' km';
+const fmtDate=t=>new Date(t).toLocaleDateString('it-IT',{day:'numeric',month:'short',year:'numeric'});
+const fmtTime=t=>new Date(t).toLocaleTimeString('it-IT',{hour:'2-digit',minute:'2-digit'});
+const daysAgo=t=>Math.floor((Date.now()-t)/DAY);
+const isIOS=/iPad|iPhone|iPod/.test(navigator.userAgent)||(navigator.platform==='MacIntel'&&navigator.maxTouchPoints>1);
+
+/* ---------- archivio locale ---------- */
+const LS='inzona.v1';
+let S;
+function load(){try{const t=localStorage.getItem(LS);return t?JSON.parse(t):null}catch(e){return null}}
+function save(){try{localStorage.setItem(LS,JSON.stringify(S))}catch(e){}}
+const FIELDS=[['azienda','Azienda'],['referente','Referente'],['cellulare','Cellulare'],['telefono','Telefono'],['email','E-mail'],['indirizzo','Indirizzo'],['cap','CAP'],['comune','Comune'],['provincia','Provincia'],['note','Note']];
+function seed(){
+ const p={id:uid(),name:SAMPLE.name,sample:true,createdAt:Date.now(),file:{...SAMPLE.file},map:{azienda:'Ragione sociale',referente:'Referente',cellulare:'Cellulare',telefono:'Telefono',email:'E-mail',indirizzo:'Indirizzo',cap:'CAP',comune:'Comune',provincia:'Prov',note:'Note'},clients:[]};
+ SAMPLE.rows.forEach((r,i)=>{const c={id:uid(),azienda:r[0],referente:r[1],cellulare:r[2],telefono:r[3],email:r[4],indirizzo:r[5],cap:r[6],comune:r[7],provincia:r[8],note:r[10],extra:{Settore:r[9]},lat:r[11],lon:r[12],geo:{status:'ok',label:[r[5],r[7]].filter(Boolean).join(', ')},createdAt:Date.now()};
+  const st=SAMPLE.geo[i];if(st){const g=gazFind(r[7]);if(st==='confirm'){c.lat=g.lat+0.004;c.lon=g.lon-0.006;c.geo={status:'confirm',label:'“Imballaggi Concesio” – Via Europa, Concesio (BS)',how:'Trovata cercando il nome dell’azienda',cands:[{lat:c.lat,lon:c.lon,label:'“Imballaggi Concesio” – Via Europa, Concesio (BS)',how:'Trovata cercando il nome dell’azienda'},{lat:g.lat-0.005,lon:g.lon+0.004,label:'Via Europa, Concesio (BS) – solo indirizzo',how:'Trovata dall’indirizzo'}],ci:0}}else{c.lat=g.lat;c.lon=g.lon;c.geo={status:'approx',label:'Centro di '+r[7]+' ('+r[8]+')',how:'Manca l’indirizzo: posizione approssimativa sul comune',cands:[{lat:g.lat,lon:g.lon,label:'Centro di '+r[7],how:'Solo comune'}],ci:0}}}
+  p.clients.push(c)});
+ const visits=SAMPLE.visits.map(([i,d])=>({id:uid(),pid:p.id,cid:p.clients[i].id,name:p.clients[i].azienda,t:(()=>{const x=new Date(Date.now()-d*DAY);x.setHours(9+i%8,15+i*3%40,0,0);return +x})(),kind:i%3?'manuale':'auto'}));
+ return{v:1,projects:[p],active:p.id,visits,settings:{trip:null,radius:10,navApp:'ask'},me:null};
+}
+function emptyProject(name='I miei clienti'){return{id:uid(),name,createdAt:Date.now(),file:{name:name.replace(/[^\w\- ]+/g,'').trim().replace(/\s+/g,'_')+'.xlsx',format:'manual',headers:[]},map:{},clients:[]}}
+function gazFind(name){if(!name)return null;const n=norm(name);const g=GAZ.find(g=>norm(g[0])===n)||GAZ.find(g=>norm(g[0]).startsWith(n)||n.startsWith(norm(g[0])));return g?{name:g[0],prov:g[1],lat:g[2],lon:g[3]}:null}
+function norm(s){return String(s||'').toLowerCase().normalize('NFD').replace(/[̀-ͯ]/g,'').replace(/[^a-z0-9]+/g,' ').trim()}
+const P=()=>S.projects.find(p=>p.id===S.active)||S.projects[0];
+const allClients=()=>P()?P().clients:[];
+const findClient=id=>allClients().find(c=>c.id===id);
+function lastVisit(cid){let t=0;for(const v of S.visits)if(v.cid===cid&&v.t>t)t=v.t;return t||null}
+function visitState(c){const t=lastVisit(c.id);if(!t)return{k:'never',txt:'Mai visitato',cls:'p-never'};const d=daysAgo(t);const txt=d===0?'Visitato oggi':d===1?'Visitato ieri':`Visitato ${d} gg fa`;return d<30?{k:'ok',txt,cls:'p-ok'}:d<90?{k:'warn',txt,cls:'p-warn'}:{k:'never',txt,cls:'p-never'}}
+const needsCheck=c=>['confirm','approx','missing'].includes(c.geo?.status);
+const hasPos=c=>typeof c.lat==='number'&&typeof c.lon==='number';
+
+/* ---------- interfaccia di base ---------- */
+let map,view='map',openId=null,near={origin:'me',radius:10},pickFor=null,verifyQ=[],listQ={q:'',f:'all',sort:'az'};
+function toast(msg,ms=2600){const t=$('#toast');t.textContent=msg;t.hidden=false;clearTimeout(toast.h);toast.h=setTimeout(()=>t.hidden=true,ms)}
+function openModal(html){$('#modal').innerHTML=html;$('#scrim').hidden=false;const f=$('#modal').querySelector('input,select,button');f&&f.focus({preventScroll:true})}
+function ask(msg,{ok='Conferma',danger=false,input=null}={}){return new Promise(res=>{ask.res=res;openModal(`<h3>${esc(msg)}</h3>${input!==null?`<div class="field" style="margin:10px 0 4px"><input id="askIn" value="${esc(input)}"></div>`:''}<div class="stack" style="margin-top:14px"><button class="btn ${danger?'signal':'primary'} block" data-act="askOk">${esc(ok)}</button><button class="btn ghost block" data-act="askNo">Annulla</button></div>`);const i=$('#askIn');if(i){i.focus();i.select()}})}
+function closeModal(){$('#scrim').hidden=true;$('#modal').innerHTML=''}
+$('#scrim').addEventListener('click',e=>{if(e.target.id==='scrim'&&!$('#modal').dataset.lock){closeModal();if(ask.res){ask.res(false);ask.res=null}}});
+function renderNav(){const n=allClients().filter(needsCheck).length;const tabs=[['map','Mappa',IC.map],['list','Clienti',IC.list],['near','Vicini',IC.near],['history','Cronologia',IC.hist],['more','Elenchi',IC.folder]];
+ $('#nav').innerHTML=tabs.map(([k,l,ic])=>`<button data-act="tab" data-v="${k}" ${view===k?'aria-current="page"':''}>${ic}<span>${l}</span>${k==='list'&&n?`<span class="badge num">${n}</span>`:''}</button>`).join('')}
+function setView(v){view=v;['list','near','history','more'].forEach(k=>$('#view-'+k).hidden=k!==v);if(v!=='map')closeSheet();renderNav();if(v==='list')renderList();if(v==='near')renderNear();if(v==='history')renderHistory();if(v==='more')renderMore();if(v==='map'){map.resize()}renderBanner()}
+function renderTop(){$('#projName').textContent=P()?P().name:'Nessun elenco';$('#addBtn').innerHTML=IC.plus;$('#floatTop').innerHTML=`<button class="iconbtn" data-act="locate" aria-label="La mia posizione">${IC.locate}</button><button class="iconbtn" data-act="fitAll" aria-label="Mostra tutti i clienti">${IC.fit}</button>`;renderBanner()}
+function renderBanner(){const b=$('#banner');if(pickFor){const c=findClient(pickFor);b.className='banner';b.innerHTML=`<span>Tocca la mappa dove si trova <b>${esc(c?.azienda)}</b></span><button data-act="cancelPick">Annulla</button>`;b.hidden=false;return}
+ const n=allClients().filter(needsCheck).length;if(n&&view==='map'&&!openId){b.className='banner';b.innerHTML=`<span><b>${n}</b> ${n===1?'posizione da confermare':'posizioni da confermare'}</span><button data-act="verifyAll">Verifica</button>`;b.hidden=false}else b.hidden=true}
+function colorFor(c){const k=visitState(c).k;return k==='ok'?map.colors['--ok']:k==='warn'?map.colors['--warn']:map.colors['--never']}
+function refreshMarkers(){if(!map.colors['--ok'])map.readColors();const nearIds=near.ids;map.markers=allClients().filter(hasPos).map(c=>({id:c.id,lat:c.lat,lon:c.lon,label:c.azienda,color:colorFor(c),flag:needsCheck(c),dim:nearIds?!nearIds.has(c.id):false,pri:nearIds&&nearIds.has(c.id)?1:0}));map.me=S.me;map.redraw();renderNav();renderBanner()}
+
+/* ---------- scheda cliente ---------- */
+function distFromMe(c){return S.me&&hasPos(c)?haversine(S.me,c):null}
+function openCard(id,fly=true){const c=findClient(id);if(!c)return;openId=id;map.selected=id;if(fly&&hasPos(c))focusTop(c)
+ const vs=visitState(c),d=distFromMe(c);const tel=c.cellulare||c.telefono;const wa=(c.cellulare||'').replace(/[^\d+]/g,'');const waNum=wa.startsWith('+')?wa.slice(1):wa.startsWith('00')?wa.slice(2):'39'+wa;
+ const extras=Object.entries(c.extra||{}).filter(([k,v])=>String(v).trim());
+ $('#sheet').innerHTML=`<div class="grab"></div>
+ <div class="card-h"><div style="min-width:0"><h3>${esc(c.azienda)}</h3><div class="meta">${esc([c.comune,c.provincia&&'('+c.provincia+')'].filter(Boolean).join(' '))}${d!=null?` · <b class="num">${fmtKm(d)}</b> da te`:''}</div></div><button class="iconbtn x" data-act="closeSheet" aria-label="Chiudi">${IC.x}</button></div>
+ <div class="row" style="margin-top:10px"><span class="pill ${vs.cls}">${vs.txt}</span>${needsCheck(c)?`<button class="pill p-q" style="border:0" data-act="verifyOne" data-id="${c.id}">Posizione da confermare</button>`:''}</div>
+ <div class="cta" style="margin-top:12px">
+  <button class="btn signal wide" data-act="navigate" data-id="${c.id}" ${hasPos(c)?'':'disabled'}>${IC.go} Dirigiti verso</button>
+  <button class="btn" data-act="markVisit" data-id="${c.id}">${IC.check} Segna visita</button>
+  <button class="btn" data-act="nearOf" data-id="${c.id}">${IC.near} Clienti vicini</button>
+  ${tel?`<a class="btn" href="tel:${esc(tel.replace(/\s/g,''))}">${IC.phone} Chiama</a>`:'<span></span>'}
+  <button class="btn" data-act="editClient" data-id="${c.id}">${IC.edit} Modifica</button>
+ </div>
+ <dl class="kv">
+  ${c.referente?`<dt>Referente</dt><dd><b>${esc(c.referente)}</b></dd><span></span>`:''}
+  ${c.cellulare?`<dt>Cellulare</dt><dd class="num">${esc(c.cellulare)}</dd><span class="acts"><a class="mini" href="tel:${esc(c.cellulare.replace(/\s/g,''))}" aria-label="Chiama">${IC.phone}</a><a class="mini" href="https://wa.me/${esc(waNum)}" target="_blank" rel="noopener" aria-label="WhatsApp">${IC.chat}</a></span>`:''}
+  ${c.telefono?`<dt>Telefono</dt><dd class="num">${esc(c.telefono)}</dd><span class="acts"><a class="mini" href="tel:${esc(c.telefono.replace(/\s/g,''))}" aria-label="Chiama il fisso">${IC.phone}</a></span>`:''}
+  ${c.email?`<dt>E-mail</dt><dd>${esc(c.email)}</dd><span class="acts"><a class="mini" href="mailto:${esc(c.email)}" aria-label="Scrivi e-mail">${IC.mail}</a></span>`:''}
+  <dt>Indirizzo</dt><dd>${esc([c.indirizzo,[c.cap,c.comune].filter(Boolean).join(' ')].filter(Boolean).join(', ')||'—')}</dd><span></span>
+  ${extras.map(([k,v])=>`<dt>${esc(k)}</dt><dd>${esc(v)}</dd><span></span>`).join('')}
+ </dl>
+ ${c.note?`<div class="note">${esc(c.note)}</div>`:''}`;
+ $('#sheet').classList.remove('closed');renderBanner();map.redraw()}
+function focusTop(c,z=Math.max(map.zoom,12)){const y=lat2y(c.lat,z)+(map.h/2-Math.max(70,map.h*0.16));map.flyTo(y2lat(y,z),c.lon,z)}
+function closeSheet(){$('#sheet').classList.add('closed');openId=null;if(map){map.selected=null;map.redraw()}renderBanner()}
+
+/* ---------- navigatore ---------- */
+function navUrls(c){const ll=c.lat+','+c.lon;return{google:`https://www.google.com/maps/dir/?api=1&destination=${ll}&travelmode=driving`,apple:`https://maps.apple.com/?daddr=${ll}&dirflg=d`,waze:`https://waze.com/ul?ll=${ll}&navigate=yes`}}
+function askNavigate(id){const c=findClient(id);if(!c||!hasPos(c))return;const u=navUrls(c);const warn=needsCheck(c)?`<p class="note" style="color:var(--crit)">Attenzione: la posizione di questo cliente non è ancora confermata.</p>`:'';const d=distFromMe(c);
+ openModal(`<h3>Avviare il navigatore verso ${esc(c.azienda)}?</h3><p>${esc([c.indirizzo,c.comune].filter(Boolean).join(', '))}${d!=null?` · circa ${fmtKm(d)} in linea d’aria`:''}</p>${warn}
+ <div class="stack">
+  <a class="btn primary block" href="${u.google}" target="_blank" rel="noopener" data-act="navGo" data-id="${c.id}">${IC.go} Sì, con Google Maps</a>
+  ${isIOS?`<a class="btn block" href="${u.apple}" target="_blank" rel="noopener" data-act="navGo" data-id="${c.id}">Sì, con Mappe di Apple</a>`:''}
+  <a class="btn block" href="${u.waze}" target="_blank" rel="noopener" data-act="navGo" data-id="${c.id}">Sì, con Waze</a>
+  <button class="btn ghost block" data-act="closeModal">No, annulla</button>
+ </div>`)}
+
+/* ---------- visite e registrazione viaggi ---------- */
+function addVisit(c,kind='manuale'){S.visits.push({id:uid(),pid:P().id,cid:c.id,name:c.azienda,t:Date.now(),kind});save();refreshMarkers()}
+let watchId=null;
+function startTrip(){if(watchId!=null||!navigator.geolocation)return;watchId=navigator.geolocation.watchPosition(pos=>{S.me={lat:pos.coords.latitude,lon:pos.coords.longitude,t:Date.now()};map.me=S.me;map.redraw();
+  if(!S.settings.trip)return;const today=new Date().toDateString();allClients().filter(hasPos).forEach(c=>{if(haversine(S.me,c)<0.15){const done=S.visits.some(v=>v.cid===c.id&&new Date(v.t).toDateString()===today);if(!done){addVisit(c,'auto');toast('Visita registrata: '+c.azienda)}}})},()=>{},{enableHighAccuracy:true,maximumAge:30000})}
+function askTrip(){ $('#modal').dataset.lock='1';openModal(`<div class="brand" style="margin-bottom:10px">${$('.brand svg').outerHTML}<span class="word">in<b>Zona</b></span></div><h3>Vuoi che registri i tuoi viaggi?</h3><p>Quando ti fermi presso un cliente, InZona annota la visita nella cronologia. Così sai sempre quando l’hai visto l’ultima volta. La posizione resta solo su questo telefono.</p>
+ <div class="stack"><button class="btn primary block" data-act="trip" data-v="1">${IC.check} Sì, registra le visite</button><button class="btn block" data-act="trip" data-v="0">No, le segno io a mano</button></div><p style="margin-top:12px;font-size:12.5px">Puoi cambiare idea in qualsiasi momento da Cronologia.</p>`)}
+function locate(fly=true){if(!navigator.geolocation){toast('Posizione non disponibile su questo dispositivo');return}navigator.geolocation.getCurrentPosition(pos=>{S.me={lat:pos.coords.latitude,lon:pos.coords.longitude,t:Date.now()};save();map.me=S.me;if(fly)map.flyTo(S.me.lat,S.me.lon,Math.max(map.zoom,12));refreshMarkers();if(view==='near')renderNear()},()=>toast('Consenti l’accesso alla posizione per vedere dove sei'),{enableHighAccuracy:true,timeout:10000})}
+
+/* ---------- elenco clienti ---------- */
+function renderList(){const el=$('#view-list');const cs=allClients();const q=norm(listQ.q);
+ let rows=cs.filter(c=>!q||norm([c.azienda,c.referente,c.comune,c.provincia].join(' ')).includes(q));
+ if(listQ.f==='check')rows=rows.filter(needsCheck);if(listQ.f==='never')rows=rows.filter(c=>!lastVisit(c.id));if(listQ.f==='old')rows=rows.filter(c=>{const t=lastVisit(c.id);return t&&daysAgo(t)>=60});
+ if(listQ.sort==='az')rows.sort((a,b)=>a.azienda.localeCompare(b.azienda,'it'));else if(S.me)rows.sort((a,b)=>(distFromMe(a)??1e9)-(distFromMe(b)??1e9));
+ const f=(k,l,n)=>`<button class="chip" data-act="listF" data-v="${k}" aria-pressed="${listQ.f===k}">${l}${n!=null?` <span class="num">${n}</span>`:''}</button>`;
+ const had=document.activeElement&&document.activeElement.id==='listSearch';
+ el.innerHTML=`<h2>Clienti</h2><p class="sub num">${cs.length} nell’elenco “${esc(P().name)}”</p>
+ <div class="stack"><input class="search" id="listSearch" type="search" placeholder="Cerca azienda, referente o comune" value="${esc(listQ.q)}" aria-label="Cerca">
+ <div class="chips">${f('all','Tutti')}${f('check','Da confermare',cs.filter(needsCheck).length)}${f('never','Mai visitati',cs.filter(c=>!lastVisit(c.id)).length)}${f('old','Non visti da 60+ gg')}<button class="chip" data-act="listSort" aria-pressed="false">Ordina: ${listQ.sort==='az'?'A–Z':'distanza'}</button></div>
+ <div class="stack" id="listRows">${rows.map(c=>{const vs=visitState(c),d=distFromMe(c);return `<button class="item" data-act="openFromList" data-id="${c.id}"><span class="t">${esc(c.azienda)}</span><span class="m">${esc([c.referente,c.comune].filter(Boolean).join(' · '))}</span><span class="r">${d!=null?`<span class="dist num">${fmtKm(d)}</span>`:''}${needsCheck(c)?'<span class="pill p-q">Da confermare</span>':`<span class="pill ${vs.cls}">${vs.txt}</span>`}</span></button>`}).join('')||'<div class="empty">Nessun cliente trovato.</div>'}</div>
+ <button class="btn primary block" data-act="newClient">${IC.plus} Crea nuovo cliente</button></div>`;
+ if(had){const s=$('#listSearch');s.focus();s.setSelectionRange(s.value.length,s.value.length)}}
+document.addEventListener('input',e=>{if(e.target.id==='listSearch'){listQ.q=e.target.value;renderList()}});
+
+/* ---------- clienti vicini ---------- */
+function nearOrigin(){if(near.origin==='me')return S.me?{...S.me,label:'la tua posizione'}:null;const c=findClient(near.origin);return c&&hasPos(c)?{lat:c.lat,lon:c.lon,label:c.azienda,id:c.id}:null}
+function nearList(){const o=nearOrigin();if(!o)return[];return allClients().filter(c=>hasPos(c)&&c.id!==o.id).map(c=>({c,d:haversine(o,c)})).filter(x=>x.d<=near.radius).sort((a,b)=>a.d-b.d)}
+function renderNear(){const el=$('#view-near');const o=nearOrigin();const res=nearList();
+ const opts=allClients().filter(hasPos).sort((a,b)=>a.azienda.localeCompare(b.azienda,'it')).map(c=>`<option value="${c.id}" ${near.origin===c.id?'selected':''}>${esc(c.azienda)} – ${esc(c.comune||'')}</option>`).join('');
+ el.innerHTML=`<h2>Clienti vicini</h2><p class="sub">Sei da un cliente? Scopri chi altro puoi vedere in zona e ottimizza il giro.</p>
+ <div class="stack"><div class="field"><label for="nearOrigin">Vicini a…</label><select id="nearOrigin"><option value="me" ${near.origin==='me'?'selected':''}>La mia posizione attuale</option>${opts}</select></div>
+ <div class="chips">${[5,10,20,30,50].map(k=>`<button class="chip num" data-act="radius" data-v="${k}" aria-pressed="${near.radius===k}">${k} km</button>`).join('')}</div>
+ ${!o?`<div class="section"><p style="margin:0 0 10px">Per usare la tua posizione, consenti l’accesso al GPS.</p><button class="btn primary" data-act="locate">${IC.locate} Trova la mia posizione</button></div>`:`
+ <div class="row" style="justify-content:space-between"><b class="num">${res.length} ${res.length===1?'cliente':'clienti'} entro ${near.radius} km da ${esc(o.label)}</b></div>
+ <div class="grid2"><button class="btn" data-act="nearOnMap">${IC.map} Vedi sulla mappa</button><button class="btn signal" data-act="tour" ${res.length?'':'disabled'}>${IC.route} Proponi giro</button></div>
+ <div class="stack">${res.map(({c,d})=>{const vs=visitState(c);return `<button class="item" data-act="openFromList" data-id="${c.id}"><span class="t">${esc(c.azienda)}</span><span class="m">${esc([c.referente,c.comune].filter(Boolean).join(' · '))}</span><span class="r"><span class="dist num">${fmtKm(d)}</span><span class="pill ${vs.cls}">${vs.txt}</span></span></button>`}).join('')||'<div class="empty">Nessun cliente nel raggio scelto. Prova ad allargarlo.</div>'}</div>
+ <p class="sub" style="font-size:12.5px">Distanze in linea d’aria. Il giro proposto parte dal più vicino e segue il cliente successivo più prossimo (max 9 tappe).</p>`}</div>`}
+document.addEventListener('change',e=>{if(e.target.id==='nearOrigin'){near.origin=e.target.value;renderNear()}});
+function tour(){const o=nearOrigin();let rest=nearList().map(x=>x.c);const seq=[];let cur=o;while(rest.length&&seq.length<9){rest.sort((a,b)=>haversine(cur,a)-haversine(cur,b));cur=rest.shift();seq.push(cur)}
+ let tot=0,prev=o;seq.forEach(c=>{tot+=haversine(prev,c);prev=c});
+ const dest=seq[seq.length-1],wps=seq.slice(0,-1).map(c=>c.lat+','+c.lon).join('|');const url=`https://www.google.com/maps/dir/?api=1&origin=${o.lat},${o.lon}&destination=${dest.lat},${dest.lon}${wps?'&waypoints='+encodeURIComponent(wps):''}&travelmode=driving`;
+ openModal(`<h3>Giro proposto: ${seq.length} tappe</h3><p class="num">Circa ${fmtKm(tot)} in linea d’aria, partendo da ${esc(o.label)}.</p><ol class="stack" style="padding-left:20px;margin:0 0 14px">${seq.map(c=>`<li><b>${esc(c.azienda)}</b> <span style="color:var(--muted)">– ${esc(c.comune||'')}</span></li>`).join('')}</ol>
+ <div class="stack"><a class="btn primary block" href="${url}" target="_blank" rel="noopener" data-act="closeModal">${IC.go} Avvia il navigatore con tutte le tappe</a><button class="btn ghost block" data-act="closeModal">Annulla</button></div>`)}
+
+/* ---------- cronologia ---------- */
+function renderHistory(){const el=$('#view-history');const vs=S.visits.filter(v=>v.pid===P().id).sort((a,b)=>b.t-a.t);let last='';
+ el.innerHTML=`<h2>Cronologia visite</h2><p class="sub">Quando hai visto ogni cliente l’ultima volta.</p>
+ <div class="section switch" style="margin-bottom:12px"><label for="tripSw"><b>Registra i miei viaggi</b><br><span style="color:var(--muted);font-size:13px">Annota da sola la visita quando ti fermi entro 150 m da un cliente (con l’app aperta).</span></label><input type="checkbox" id="tripSw" ${S.settings.trip?'checked':''}></div>
+ <div class="stack">${vs.map(v=>{const d=new Date(v.t).toDateString();const hd=d!==last?`<div class="day">${fmtDate(v.t)}</div>`:'';last=d;const c=findClient(v.cid);return hd+`<div class="item"><span class="t">${esc(c?c.azienda:v.name)}</span><span class="m num">${fmtTime(v.t)} · ${v.kind==='auto'?'registrata dal GPS':'segnata a mano'}</span><span class="r"><button class="mini" data-act="delVisit" data-id="${v.id}" aria-label="Elimina visita" style="color:var(--muted)">${IC.trash}</button></span></div>`}).join('')||'<div class="empty">Nessuna visita registrata. Apri un cliente e tocca “Segna visita”.</div>'}</div>`}
+document.addEventListener('change',e=>{if(e.target.id==='tripSw'){S.settings.trip=e.target.checked;save();if(S.settings.trip){startTrip();toast('Registrazione viaggi attiva')}else toast('Registrazione viaggi disattivata')}});
+
+/* ---------- elenchi e file ---------- */
+function renderMore(){const el=$('#view-more');
+ el.innerHTML=`<h2>Elenchi e file</h2><p class="sub">Ogni file che carichi diventa un elenco. Puoi modificarlo qui e riscaricarlo aggiornato.</p>
+ <div class="stack">${S.projects.map(p=>{const n=p.clients.length,k=p.clients.filter(needsCheck).length;return `<div class="section"><div class="row" style="justify-content:space-between;align-items:flex-start"><div style="min-width:0"><b style="font-size:16px">${esc(p.name)}</b>${p.sample?' <span class="demo">ESEMPIO</span>':''}<div class="meta num">${esc(p.file.name)} · ${n} clienti${k?` · <span style="color:var(--crit)">${k} da confermare</span>`:''}</div></div>${p.id===S.active?'<span class="pill p-ok">In uso</span>':`<button class="btn" data-act="useProj" data-id="${p.id}">Apri</button>`}</div>
+ <div class="grid2" style="margin-top:10px"><button class="btn" data-act="exportProj" data-id="${p.id}" data-fmt="orig">${IC.down} Scarica .${esc(p.file.format==='manual'?'xlsx':p.file.format)}</button><button class="btn" data-act="exportProj" data-id="${p.id}" data-fmt="${p.file.format==='xlsx'?'csv':'xlsx'}">${IC.down} Scarica .${p.file.format==='xlsx'?'csv':'xlsx'}</button><button class="btn" data-act="renameProj" data-id="${p.id}">${IC.edit} Rinomina</button><button class="btn danger" data-act="delProj" data-id="${p.id}">${IC.trash} Elimina</button></div></div>`}).join('')}
+ <div class="grid2"><button class="btn primary" data-act="import">${IC.up} Carica un elenco</button><button class="btn" data-act="newProj">${IC.plus} Elenco vuoto</button></div>${S.projects.some(p=>p.sample)?`<p class="note" style="margin:0">Per togliere i clienti di esempio tocca <b>Elimina</b> sull’elenco “Esempio”. Se non hai altri elenchi, ne resta uno vuoto, “I miei clienti”, dove aggiungere i tuoi.</p>`:''}
+ <div class="section"><h3>File consigliati</h3><div class="stack" style="font-size:14px"><div><b>Excel (.xlsx)</b> – il migliore: una riga per cliente, intestazioni in prima riga.</div><div><b>CSV (.csv)</b> – esportabile da qualsiasi gestionale o CRM.</div><div><b>Word (.docx)</b> – va bene se i clienti sono in una tabella.</div><div><b>Rubrica (.vcf)</b> – contatti esportati dal telefono.</div><div style="color:var(--muted)">Colonne utili: Ragione sociale, Referente, Cellulare, Telefono, E-mail, Indirizzo, CAP, Comune, Provincia, Note. PDF e .doc vecchi: salvali prima come .xlsx o .docx.</div></div></div>
+ <div class="section"><h3>Backup e Google Drive</h3><p class="meta" style="margin:0 0 10px">Salva tutto (elenchi, modifiche, cronologia) in un unico file da tenere nella cartella Drive “InZona – Progetti”.</p><div class="grid2"><button class="btn" data-act="backup">${IC.down} Salva backup</button><button class="btn" data-act="restore">${IC.up} Ripristina</button></div></div>
+ <div class="section"><h3>Impostazioni</h3><p class="meta" style="margin:0">InZona prototipo · dati salvati solo su questo dispositivo</p><button class="btn ghost danger" style="margin-top:8px;padding-left:0" data-act="resetAll">Ripristina i dati di esempio</button></div>
+ </div>`}
+
+/* ---------- librerie caricate solo quando servono ---------- */
+const LIBS={XLSX:['https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js','https://cdn.jsdelivr.net/npm/xlsx@0.18.5/dist/xlsx.full.min.js'],mammoth:['https://cdnjs.cloudflare.com/ajax/libs/mammoth/1.6.0/mammoth.browser.min.js','https://cdn.jsdelivr.net/npm/mammoth@1.8.0/mammoth.browser.min.js'],docx:['https://cdn.jsdelivr.net/npm/docx@9.6.1/dist/index.iife.js']};
+function script(src){return new Promise((ok,ko)=>{const s=document.createElement('script');s.src=src;s.onload=ok;s.onerror=()=>{s.remove();ko(new Error(src))};document.head.appendChild(s)})}
+async function lib(name){if(window[name])return window[name];for(const u of LIBS[name]){try{await script(u);if(window[name])return window[name]}catch(e){}}throw new Error('Serve una connessione a internet per leggere/creare questo tipo di file.')}
+
+/* ---------- lettura dei file ---------- */
+function parseCSV(txt){txt=txt.replace(/^﻿/,'');const first=txt.split(/\r?\n/)[0]||'';const cnt=d=>first.split(d).length;const del=[';',',','\t','|'].sort((a,b)=>cnt(b)-cnt(a))[0];const rows=[];let row=[],f='',q=false;for(let i=0;i<txt.length;i++){const ch=txt[i];if(q){if(ch==='"'){if(txt[i+1]==='"'){f+='"';i++}else q=false}else f+=ch}else if(ch==='"')q=true;else if(ch===del){row.push(f);f=''}else if(ch==='\n'||ch==='\r'){if(ch==='\r'&&txt[i+1]==='\n')i++;row.push(f);rows.push(row);row=[];f=''}else f+=ch}if(f||row.length){row.push(f);rows.push(row)}return rows.filter(r=>r.some(x=>String(x).trim()))}
+function parseVCF(txt){const out=[['Azienda','Referente','Cellulare','Telefono','E-mail','Indirizzo','CAP','Comune','Provincia']];txt.split(/END:VCARD/i).forEach(b=>{if(!/BEGIN:VCARD/i.test(b))return;const g=re=>{const m=b.match(re);return m?m[1].trim():''};const adr=g(/\nADR[^:]*:([^\n\r]*)/i).split(';');const cell=g(/\nTEL[^:]*CELL[^:]*:([^\n\r]*)/i),tel=g(/\nTEL[^:]*:([^\n\r]*)/i);out.push([g(/\nORG[^:]*:([^\n\r;]*)/i)||g(/\nFN[^:]*:([^\n\r]*)/i),g(/\nFN[^:]*:([^\n\r]*)/i),cell||tel,cell&&tel!==cell?tel:'',g(/\nEMAIL[^:]*:([^\n\r]*)/i),adr[2]||'',adr[5]||'',adr[3]||'',adr[4]||''])});return out}
+async function readFile(file){const ext=(file.name.split('.').pop()||'').toLowerCase();
+ if(['csv','txt'].includes(ext))return{format:'csv',rows:parseCSV(await file.text())};
+ if(ext==='vcf')return{format:'vcf',rows:parseVCF(await file.text())};
+ if(['xlsx','xls','ods'].includes(ext)){const X=await lib('XLSX');const wb=X.read(await file.arrayBuffer(),{type:'array'});const sh=wb.SheetNames[0];return{format:'xlsx',sheet:sh,rows:X.utils.sheet_to_json(wb.Sheets[sh],{header:1,defval:'',raw:false})}}
+ if(ext==='docx'){const M=await lib('mammoth');const r=await M.convertToHtml({arrayBuffer:await file.arrayBuffer()});const doc=new DOMParser().parseFromString(r.value,'text/html');const tb=[...doc.querySelectorAll('table')].sort((a,b)=>b.rows.length-a.rows.length)[0];if(tb)return{format:'docx',rows:[...tb.rows].map(tr=>[...tr.cells].map(td=>td.textContent.trim()))};const lines=[...doc.querySelectorAll('p')].map(p=>p.textContent.trim()).filter(Boolean);return{format:'docx',rows:parseCSV(lines.join('\n'))}}
+ throw new Error('Formato .'+ext+' non supportato. Salva il file come Excel (.xlsx), CSV o Word (.docx) con una tabella.')}
+const SYN={azienda:['ragione sociale','azienda','ditta','cliente','societa','denominazione','nome azienda','company','impresa','org'],referente:['referente','contatto','persona di riferimento','responsabile','titolare','nome e cognome','nominativo'],cellulare:['cellulare','cell','mobile','telefono cellulare','smartphone'],telefono:['telefono','tel','telefono fisso','fisso','phone'],email:['e mail','email','mail','posta elettronica','pec'],indirizzo:['indirizzo','via','sede','address','indirizzo sede'],cap:['cap','c a p','codice postale'],comune:['comune','citta','localita','paese','city','sede comune'],provincia:['provincia','prov','pr','sigla provincia'],note:['note','annotazioni','commenti','osservazioni']};
+function guessMap(headers){const m={};const H=headers.map(h=>norm(h));FIELDS.forEach(([k])=>{let i=H.findIndex((h,j)=>SYN[k].includes(h)&&!Object.values(m).includes(headers[j]));if(i<0)i=H.findIndex((h,j)=>h&&SYN[k].some(s=>h.includes(s))&&!Object.values(m).includes(headers[j]));if(i>=0)m[k]=headers[i]});return m}
+let imp=null;
+async function onFile(file){try{toast('Leggo “'+file.name+'”…',1500);const r=await readFile(file);let hi=r.rows.findIndex(x=>x.filter(v=>String(v).trim()).length>=2);if(hi<0)throw new Error('Non ho trovato righe con dati nel file.');const headers=r.rows[hi].map((h,i)=>String(h).trim()||'Colonna '+(i+1));const data=r.rows.slice(hi+1).filter(x=>x.some(v=>String(v).trim()));imp={file:{name:file.name,format:r.format==='vcf'?'csv':r.format,headers,sheet:r.sheet},data,map:guessMap(headers),name:file.name.replace(/\.[^.]+$/,'').replace(/[_-]+/g,' ')};showMapping()}catch(e){openModal(`<h3>Non riesco a leggere il file</h3><p>${esc(e.message)}</p><button class="btn primary block" data-act="closeModal">Ho capito</button>`)}}
+function showMapping(){const h=imp.file.headers;const sel=k=>`<select id="map_${k}"><option value="">— nessuna —</option>${h.map(x=>`<option ${imp.map[k]===x?'selected':''}>${esc(x)}</option>`).join('')}</select>`;
+ const lat=h.find(x=>/^(lat|latitudine)$/i.test(norm(x)));
+ openModal(`<h3>Ho letto ${imp.data.length} clienti</h3><p>Controlla che ogni informazione sia collegata alla colonna giusta del tuo file.</p>
+ <div class="field" style="margin-bottom:10px"><label for="impName">Nome dell’elenco</label><input id="impName" value="${esc(imp.name)}"></div>
+ <div class="form">${FIELDS.map(([k,l])=>`<div class="field"><label for="map_${k}">${l}${k==='azienda'?' *':''}</label>${sel(k)}</div>`).join('')}</div>
+ <p style="margin:12px 0 6px;font-size:13px">Anteprima</p><div class="table"><table><tr>${h.map(x=>`<th>${esc(x)}</th>`).join('')}</tr>${imp.data.slice(0,3).map(r=>`<tr>${h.map((_,i)=>`<td>${esc(r[i])}</td>`).join('')}</tr>`).join('')}</table></div>
+ ${lat?'<p style="margin-top:8px;font-size:13px">Il file contiene già le coordinate: le userò direttamente.</p>':''}
+ <div class="stack" style="margin-top:14px"><button class="btn primary block" data-act="doImport">${IC.pin} Metti i clienti sulla mappa</button><button class="btn ghost block" data-act="closeModal">Annulla</button></div>`)}
+async function doImport(){FIELDS.forEach(([k])=>{imp.map[k]=$('#map_'+k).value||undefined});if(!imp.map.azienda){toast('Scegli la colonna con il nome dell’azienda');return}
+ const h=imp.file.headers,idx=x=>h.indexOf(x);const latH=h.find(x=>/^(lat|latitudine)$/i.test(norm(x))),lonH=h.find(x=>/^(lon|lng|long|longitudine)$/i.test(norm(x)));const used=new Set(Object.values(imp.map).filter(Boolean).concat([latH,lonH]));
+ const p={id:uid(),name:$('#impName').value.trim()||imp.name,createdAt:Date.now(),file:imp.file,map:imp.map,clients:[]};
+ imp.data.forEach(r=>{const c={id:uid(),extra:{},createdAt:Date.now()};FIELDS.forEach(([k])=>c[k]=imp.map[k]?String(r[idx(imp.map[k])]??'').trim():'');h.forEach((x,i)=>{if(!used.has(x))c.extra[x]=r[i]??''});if(!c.azienda)return;const la=latH&&parseFloat(String(r[idx(latH)]).replace(',','.')),lo=lonH&&parseFloat(String(r[idx(lonH)]).replace(',','.'));if(la&&lo){c.lat=la;c.lon=lo;c.geo={status:'ok',label:'Coordinate dal file'}}p.clients.push(c)});
+ S.projects.push(p);S.active=p.id;save();$('#modal').dataset.lock='1';
+ const todo=p.clients.filter(c=>!hasPos(c));openModal(`<h3>Cerco i clienti sulla mappa…</h3><p id="geoMsg">0 di ${todo.length}</p><div class="progress"><i id="geoBar"></i></div><p style="margin-top:10px;font-size:12.5px">Uso l’indirizzo e il nome dell’azienda. Se non sono sicuro, alla fine ti chiedo conferma.</p>`);
+ for(let i=0;i<todo.length;i++){await geocode(todo[i]);$('#geoMsg').textContent=`${i+1} di ${todo.length} · ${todo[i].azienda}`;$('#geoBar').style.width=((i+1)/todo.length*100)+'%'}
+ save();delete $('#modal').dataset.lock;renderTop();refreshMarkers();map.fit(p.clients.filter(hasPos));const k=p.clients.filter(needsCheck).length;
+ openModal(`<h3>Fatto: ${p.clients.length} clienti importati</h3><p>${k?`<b>${p.clients.length-k}</b> sono sulla mappa con certezza. Per <b>${k}</b> non sono sicuro della posizione: ti chiedo di confermarli uno alla volta.${netOK?'':' (Senza internet ho potuto usare solo il comune.)'}`:'Tutti i clienti sono sulla mappa.'}</p><div class="stack">${k?`<button class="btn primary block" data-act="verifyAll">Verifica ora</button>`:''}<button class="btn block" data-act="closeModal">${k?'Più tardi':'Vai alla mappa'}</button></div>`);setView('map')}
+
+/* ---------- ricerca posizione ---------- */
+let netOK=true,lastReq=0;
+async function nomi(q){if(!netOK)return[];const wait=1100-(Date.now()-lastReq);if(wait>0)await new Promise(r=>setTimeout(r,wait));lastReq=Date.now();try{const r=await fetch('https://nominatim.openstreetmap.org/search?format=jsonv2&countrycodes=it&limit=3&accept-language=it&q='+encodeURIComponent(q));if(!r.ok)throw 0;return await r.json()}catch(e){netOK=false;return[]}}
+const short=d=>String(d||'').split(',').slice(0,4).join(',');
+async function geocode(c){const cands=[];const addr=[c.indirizzo,c.cap,c.comune,c.provincia].filter(Boolean).join(', ');
+ if(c.indirizzo&&c.comune){(await nomi(addr)).slice(0,2).forEach(r=>cands.push({lat:+r.lat,lon:+r.lon,label:short(r.display_name),how:'Trovata dall’indirizzo',k:'addr'}))}
+ if(c.azienda){const r=(await nomi([c.azienda,c.comune].filter(Boolean).join(', '))).filter(r=>!['city','town','village','administrative'].includes(r.type));r.slice(0,2).forEach(x=>cands.push({lat:+x.lat,lon:+x.lon,label:short(x.display_name),how:'Trovata cercando il nome dell’azienda',k:'name'}))}
+ const g=gazFind(c.comune);if(g)cands.push({lat:g.lat,lon:g.lon,label:'Centro di '+g.name+' ('+g.prov+')',how:'Posizione approssimativa sul comune',k:'town'});
+ let status='missing';const a=cands.find(x=>x.k==='addr'),n=cands.find(x=>x.k==='name');
+ if(a&&(!n||haversine(a,n)<0.4))status='ok';else if(a||n)status='confirm';else if(g)status='approx';
+ if(!cands.length&&c.comune&&netOK){const t=await nomi(c.comune+', Italia');if(t[0]){cands.push({lat:+t[0].lat,lon:+t[0].lon,label:short(t[0].display_name),how:'Posizione approssimativa sul comune',k:'town'});status='approx'}}
+ const best=cands[0];if(best){c.lat=best.lat;c.lon=best.lon}else{delete c.lat;delete c.lon}c.geo={status,label:best?best.label:'',how:best?best.how:'',cands,ci:0}}
+
+/* ---------- conferma posizioni ---------- */
+function startVerify(ids){verifyQ=ids||allClients().filter(needsCheck).map(c=>c.id);closeModal();setView('map');nextVerify()}
+function nextVerify(){const id=verifyQ[0];if(!id){closeSheet();refreshMarkers();toast('Posizioni verificate');return}const c=findClient(id);if(!c){verifyQ.shift();return nextVerify()}openId=id;map.selected=id;
+ const g=c.geo||{};const n=(g.cands||[]).length;if(hasPos(c))focusTop(c,13);
+ $('#sheet').innerHTML=`<div class="grab"></div><p class="demo" style="margin:0 0 4px">DA CONFERMARE · ${verifyQ.length} ${verifyQ.length===1?'rimasto':'rimasti'}</p><div class="card-h"><div><h3>È questa l’azienda giusta?</h3><div class="meta" style="font-size:15px;color:var(--ink);margin-top:6px"><b>${esc(c.azienda)}</b></div><div class="meta">Dal tuo file: ${esc([c.indirizzo,c.cap,c.comune,c.provincia].filter(Boolean).join(', ')||'nessun indirizzo')}</div></div><button class="iconbtn x" data-act="closeSheet" aria-label="Chiudi">${IC.x}</button></div>
+ <div class="note" style="margin:12px 0">${hasPos(c)?`<b style="color:var(--ink)">${esc(g.label)}</b><br>${esc(g.how||'')}`:'Non ho trovato questa azienda sulla mappa.'}</div>
+ <div class="cta">${hasPos(c)?`<button class="btn primary wide" data-act="vYes" data-id="${c.id}">${IC.check} Sì, è lei</button>`:''}${n>1?`<button class="btn" data-act="vNext" data-id="${c.id}">Altro risultato (${(g.ci||0)+1}/${n})</button>`:''}<button class="btn ${n>1?'':'wide'}" data-act="vPick" data-id="${c.id}">${IC.pin} La indico io</button><button class="btn" data-act="editClient" data-id="${c.id}">${IC.edit} Correggi indirizzo</button><button class="btn ghost" data-act="vSkip">Salta per ora</button></div>`;
+ $('#sheet').classList.remove('closed');renderBanner();map.redraw()}
+
+/* ---------- nuovo cliente / modifica ---------- */
+function clientForm(id){const c=id?findClient(id):{extra:{}};const p=P();const extraKeys=[...new Set([...(p.file.headers||[]).filter(h=>!Object.values(p.map||{}).includes(h)&&!/^(lat|latitudine|lon|lng|longitudine|ultima visita)$/i.test(norm(h))),...Object.keys(c.extra||{})])];
+ openModal(`<h3>${id?'Modifica cliente':'Nuovo cliente'}</h3><p>${id?'Le modifiche finiscono anche nel file che scarichi.':`Verrà aggiunto all’elenco “${esc(p.name)}” e al suo file.`}</p>
+ <form class="form" id="cForm" onsubmit="return false">${FIELDS.map(([k,l])=>`<div class="field ${['azienda','indirizzo','note','email'].includes(k)?'full':''}"><label for="f_${k}">${l}${k==='azienda'?' *':''}</label>${k==='note'?`<textarea id="f_${k}">${esc(c[k])}</textarea>`:`<input id="f_${k}" value="${esc(c[k])}" ${k==='cellulare'||k==='telefono'?'type="tel" inputmode="tel"':k==='email'?'type="email"':''} ${k==='azienda'?'required':''}>`}</div>`).join('')}
+ ${extraKeys.map((k,i)=>`<div class="field"><label for="fx_${i}">${esc(k)}</label><input id="fx_${i}" data-key="${esc(k)}" value="${esc(c.extra?.[k]??'')}"></div>`).join('')}
+ <div class="field full"><label for="f_pos">Posizione sulla mappa</label><select id="f_pos"><option value="auto">Cercala dall’indirizzo</option><option value="here">Sono qui adesso: usa la mia posizione</option><option value="pick">La indico io sulla mappa</option>${id&&hasPos(c)?'<option value="keep" selected>Lascia quella attuale</option>':''}</select></div></form>
+ <div class="stack" style="margin-top:14px"><button class="btn primary block" data-act="saveClient" data-id="${id||''}">${IC.check} Salva</button>${id?`<button class="btn danger block" data-act="delClient" data-id="${id}">${IC.trash} Elimina cliente</button>`:''}<button class="btn ghost block" data-act="closeModal">Annulla</button></div>`)}
+async function saveClient(id){const p=P();let c=id?findClient(id):null;const v={};FIELDS.forEach(([k])=>v[k]=$('#f_'+k).value.trim());if(!v.azienda){toast('Scrivi almeno il nome dell’azienda');return}
+ const addrChanged=!c||['indirizzo','cap','comune','provincia','azienda'].some(k=>c[k]!==v[k]);if(!c){c={id:uid(),extra:{},createdAt:Date.now()};p.clients.push(c)}Object.assign(c,v,{updatedAt:Date.now()});
+ document.querySelectorAll('#cForm [data-key]').forEach(i=>c.extra[i.dataset.key]=i.value);
+ const how=$('#f_pos').value;closeModal();
+ if(how==='here'){await new Promise(ok=>navigator.geolocation?navigator.geolocation.getCurrentPosition(pos=>{c.lat=pos.coords.latitude;c.lon=pos.coords.longitude;c.geo={status:'manual',label:'Posizione GPS al momento del salvataggio'};ok()},()=>{toast('GPS non disponibile: cerco dall’indirizzo');ok()},{enableHighAccuracy:true,timeout:8000}):ok())}
+ if(how==='pick'){save();pickFor=c.id;setView('map');renderBanner();map.pick=true;map.redraw();return}
+ if(how==='auto'&&(addrChanged||!hasPos(c))&&c.geo?.status!=='manual'){toast('Cerco '+c.azienda+' sulla mappa…');await geocode(c)}
+ save();refreshMarkers();if(view==='list')renderList();toast(id?'Cliente aggiornato':'Cliente creato');
+ if(needsCheck(c)){startVerify([c.id])}else{setView('map');openCard(c.id)}}
+
+/* ---------- esportazione ---------- */
+function projectTable(p){const base=(p.file.headers||[]).slice();const map=p.map||{};const headers=base.length?base:FIELDS.map(f=>f[1]);const byField={};FIELDS.forEach(([k,l])=>{const h=map[k]||(base.length?null:l);if(h)byField[h]=k});
+ FIELDS.forEach(([k,l])=>{if(!map[k]&&base.length&&p.clients.some(c=>c[k])){headers.push(l);byField[l]=k}});
+ ['Ultima visita','Latitudine','Longitudine'].forEach(h=>{if(!headers.includes(h))headers.push(h)});
+ const rows=p.clients.map(c=>headers.map(h=>{if(byField[h])return c[byField[h]]||'';if(h==='Ultima visita'){const t=lastVisit(c.id);return t?fmtDate(t):''}if(/^(lat|latitudine)$/i.test(norm(h)))return hasPos(c)?+c.lat.toFixed(6):'';if(/^(lon|lng|longitudine)$/i.test(norm(h)))return hasPos(c)?+c.lon.toFixed(6):'';return c.extra?.[h]??''}));return{headers,rows}}
+async function saveFile(name,data){try{const d=window.claude&&await window.claude.use('downloads');if(d){await d.save({filename:name,data});toast('File pronto: '+name);return}}catch(e){if(e&&e.code==='declined')return}
+ const blob=data instanceof Blob?data:new Blob([data]);const a=document.createElement('a');a.href=URL.createObjectURL(blob);a.download=name;document.body.appendChild(a);a.click();setTimeout(()=>{URL.revokeObjectURL(a.href);a.remove()},1500);toast('Scaricato: '+name)}
+async function exportProj(id,fmt){const p=S.projects.find(x=>x.id===id);if(fmt==='orig')fmt=p.file.format==='manual'?'xlsx':p.file.format;const {headers,rows}=projectTable(p);const base=(p.file.name||p.name).replace(/\.[^.]+$/,'')+'_aggiornato';
+ try{if(fmt==='csv'){const q=v=>{v=String(v??'');return /[;"\n]/.test(v)?'"'+v.replace(/"/g,'""')+'"':v};return saveFile(base+'.csv','﻿'+[headers,...rows].map(r=>r.map(q).join(';')).join('\r\n'))}
+ if(fmt==='xlsx'){const X=await lib('XLSX');const ws=X.utils.aoa_to_sheet([headers,...rows]);ws['!cols']=headers.map((h,i)=>({wch:Math.min(40,Math.max(10,h.length+2,...rows.map(r=>String(r[i]).length)))}));const wb=X.utils.book_new();X.utils.book_append_sheet(wb,ws,(p.file.sheet||'Clienti').slice(0,31));return saveFile(base+'.xlsx',new Blob([X.write(wb,{type:'array',bookType:'xlsx'})]))}
+ if(fmt==='docx'){const D=await lib('docx');const cell=(t,b)=>new D.TableCell({children:[new D.Paragraph({children:[new D.TextRun({text:String(t??''),bold:!!b,size:18})]})]});const doc=new D.Document({sections:[{properties:{page:{size:{orientation:D.PageOrientation.LANDSCAPE}}},children:[new D.Paragraph({heading:D.HeadingLevel.HEADING_1,children:[new D.TextRun(p.name)]}),new D.Paragraph({children:[new D.TextRun({text:'Aggiornato con InZona il '+fmtDate(Date.now()),italics:true,size:18})]}),new D.Table({width:{size:100,type:D.WidthType.PERCENTAGE},rows:[new D.TableRow({tableHeader:true,children:headers.map(h=>cell(h,1))}),...rows.map(r=>new D.TableRow({children:r.map(v=>cell(v))}))]})]}]});return saveFile(base+'.docx',await D.Packer.toBlob(doc))}}
+ catch(e){openModal(`<h3>Download non riuscito</h3><p>${esc(e.message)}</p><button class="btn primary block" data-act="closeModal">Ok</button>`)}}
+
+/* ---------- azioni ---------- */
+const A={
+ askOk:()=>{const i=$('#askIn');const v=i?i.value:true;closeModal();ask.res&&ask.res(v);ask.res=null},
+ askNo:()=>{closeModal();ask.res&&ask.res(false);ask.res=null},
+ tab:d=>{near.ids=null;map.circle=null;refreshMarkers();setView(d.v)},
+ closeModal, closeSheet:()=>{verifyQ=[];closeSheet()},
+ newClient:()=>clientForm(null), editClient:d=>clientForm(d.id), saveClient:d=>saveClient(d.id||null),
+ delClient:async d=>{const c=findClient(d.id);if(!await ask('Eliminare '+c.azienda+'?',{ok:'Sì, elimina',danger:true}))return;P().clients=P().clients.filter(x=>x.id!==d.id);save();closeModal();closeSheet();refreshMarkers();if(view==='list')renderList();toast('Cliente eliminato')},
+ navigate:d=>askNavigate(d.id), navGo:d=>{setTimeout(closeModal,300)},
+ markVisit:d=>{const c=findClient(d.id);addVisit(c);openCard(c.id,false);toast('Visita a '+c.azienda+' registrata')},
+ nearOf:d=>{near.origin=d.id;setView('near')},
+ openFromList:d=>{setView('map');openCard(d.id)},
+ listF:d=>{listQ.f=d.v;renderList()}, listSort:()=>{listQ.sort=listQ.sort==='az'?'dist':'az';if(listQ.sort==='dist'&&!S.me)locate(false);renderList()},
+ radius:d=>{near.radius=+d.v;S.settings.radius=near.radius;save();renderNear()},
+ nearOnMap:()=>{const o=nearOrigin();const res=nearList();near.ids=new Set(res.map(x=>x.c.id));if(o.id)near.ids.add(o.id);map.circle={lat:o.lat,lon:o.lon,km:near.radius};setView('map');refreshMarkers();map.fit([o,...res.map(x=>x.c)],50,14);toast(res.length+' clienti entro '+near.radius+' km')},
+ tour, locate:()=>locate(true),
+ fitAll:()=>{near.ids=null;map.circle=null;refreshMarkers();map.fit(allClients().filter(hasPos))},
+ delVisit:d=>{S.visits=S.visits.filter(v=>v.id!==d.id);save();renderHistory();refreshMarkers()},
+ trip:d=>{S.settings.trip=d.v==='1';save();delete $('#modal').dataset.lock;closeModal();if(S.settings.trip){startTrip();toast('Registrazione viaggi attiva')}},
+ verifyAll:()=>startVerify(), verifyOne:d=>startVerify([d.id]),
+ vYes:d=>{const c=findClient(d.id);c.geo.status='ok';save();verifyQ.shift();refreshMarkers();toast('Posizione confermata');nextVerify()},
+ vNext:d=>{const c=findClient(d.id),g=c.geo;g.ci=((g.ci||0)+1)%g.cands.length;const k=g.cands[g.ci];c.lat=k.lat;c.lon=k.lon;g.label=k.label;g.how=k.how;save();refreshMarkers();nextVerify()},
+ vPick:d=>{pickFor=d.id;closeSheet();map.pick=true;renderBanner();map.redraw()},
+ vSkip:()=>{verifyQ.shift();nextVerify()},
+ cancelPick:()=>{pickFor=null;map.pick=false;renderBanner();map.redraw();if(verifyQ.length)nextVerify()},
+ projects:()=>openModal(`<h3>Elenchi clienti</h3><div class="stack">${S.projects.map(p=>`<button class="item" data-act="useProj" data-id="${p.id}"><span class="t">${esc(p.name)}</span><span class="m num">${esc(p.file.name)} · ${p.clients.length} clienti</span><span class="r">${p.id===S.active?'<span class="pill p-ok">In uso</span>':''}</span></button>`).join('')}<button class="btn primary block" data-act="import">${IC.up} Carica un nuovo elenco</button></div>`),
+ useProj:d=>{S.active=d.id;save();closeModal();near.ids=null;map.circle=null;closeSheet();renderTop();refreshMarkers();map.fit(allClients().filter(hasPos));if(view==='more')renderMore()},
+ newProj:async()=>{const n=await ask('Nome del nuovo elenco',{ok:'Crea elenco',input:'I miei clienti'});if(!n||!n.trim())return;const p=emptyProject(n.trim());S.projects.push(p);S.active=p.id;save();closeModal();renderTop();refreshMarkers();if(view==='more')renderMore();toast('Elenco “'+p.name+'” creato: aggiungi i clienti con +')},
+ import:()=>{closeModal();$('#fileIn').value='';$('#fileIn').click()},
+ doImport, exportProj:d=>exportProj(d.id,d.fmt),
+ renameProj:async d=>{const p=S.projects.find(x=>x.id===d.id);const n=await ask('Nuovo nome dell’elenco',{ok:'Salva',input:p.name});if(n&&n.trim()){p.name=n.trim();save();renderMore();renderTop()}},
+ delProj:async d=>{const p=S.projects.find(x=>x.id===d.id);if(!await ask('Eliminare l’elenco “'+p.name+'” e la sua cronologia?',{ok:'Sì, elimina',danger:true}))return;S.projects=S.projects.filter(x=>x.id!==d.id);S.visits=S.visits.filter(v=>v.pid!==d.id);if(!S.projects.length)S.projects.push(emptyProject());if(!S.projects.find(x=>x.id===S.active))S.active=S.projects[0].id;save();renderMore();renderTop();refreshMarkers()},
+ backup:()=>saveFile('InZona_backup_'+new Date().toISOString().slice(0,10)+'.json',JSON.stringify(S,null,1)),
+ restore:()=>{$('#backupIn').value='';$('#backupIn').click()},
+ resetAll:async()=>{if(!await ask('Cancellare tutti i dati e ricaricare l’esempio?',{ok:'Sì, ricarica',danger:true}))return;const t=S.settings.trip;S=seed();S.settings.trip=t;save();renderTop();refreshMarkers();renderMore();map.fit(allClients().filter(hasPos))},
+};
+document.addEventListener('click',e=>{const a=e.target.closest('[data-act]');if(!a||!A[a.dataset.act])return;if(a.tagName!=='A')e.preventDefault();A[a.dataset.act](a.dataset,a)});
+$('#fileIn').addEventListener('change',e=>{const f=e.target.files[0];if(f)onFile(f)});
+$('#backupIn').addEventListener('change',async e=>{const f=e.target.files[0];if(!f)return;try{const d=JSON.parse(await f.text());if(!d.projects)throw 0;S=d;save();renderTop();refreshMarkers();renderMore();toast('Backup ripristinato')}catch(x){toast('Questo file non è un backup di InZona')}});
+document.addEventListener('keydown',e=>{if(e.key==='Escape'){if(!$('#scrim').hidden&&!$('#modal').dataset.lock)closeModal();else if(openId)closeSheet()}});
+
+/* ---------- avvio ---------- */
+S=load()||seed();near.radius=S.settings.radius||10;
+map=new MapView($('#map'),{
+ onMarker:m=>{if(pickFor)return;if(verifyQ.length&&verifyQ[0]!==m.id)verifyQ=[];openCard(m.id,true)},
+ onTap:(ll)=>{if(pickFor){const c=findClient(pickFor);c.lat=ll.lat;c.lon=ll.lon;c.geo={status:'manual',label:'Indicata a mano'};pickFor=null;map.pick=false;save();refreshMarkers();toast('Posizione di '+c.azienda+' salvata');if(verifyQ[0]===c.id)verifyQ.shift();if(verifyQ.length)nextVerify();else openCard(c.id,false);return}if(openId&&!verifyQ.length)closeSheet()},
+ onStatus:s=>{$('#attrib').innerHTML=s==='tiles'?'© OpenStreetMap':'Mappa schematica (offline) · con internet vedi le strade'}
+});
+map.readColors();renderTop();setView('map');refreshMarkers();
+map.fit(allClients().filter(hasPos),40,11);
+setTimeout(()=>{if(map.tileMode==='try'&&!map.tileOk)$('#attrib').textContent='Mappa schematica (offline) · con internet vedi le strade'},4000);
+if(S.settings.trip===null)setTimeout(askTrip,500);else if(S.settings.trip)startTrip();
+if('serviceWorker' in navigator&&location.protocol==='https:'&&!window.claude)navigator.serviceWorker.register('sw.js').catch(()=>{});
+
+</script>
+</body></html>
