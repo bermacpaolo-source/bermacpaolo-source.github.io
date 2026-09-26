@@ -1,4 +1,4 @@
-<!doctype html><!-- v2 --><html lang="it"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover"><meta name="theme-color" content="#0E4D64"><meta name="description" content="Mappa dei clienti per agenti di commercio"><meta name="apple-mobile-web-app-capable" content="yes"><meta name="apple-mobile-web-app-title" content="InZona"><link rel="manifest" href="manifest.webmanifest"><link rel="apple-touch-icon" href="icon-192.png"><link rel="icon" href="icon.svg"><title>InZona</title>
+<!doctype html><!-- v3 --><html lang="it"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover"><meta name="theme-color" content="#0E4D64"><meta name="description" content="Mappa dei clienti per agenti di commercio"><meta name="apple-mobile-web-app-capable" content="yes"><meta name="apple-mobile-web-app-title" content="InZona"><link rel="manifest" href="manifest.webmanifest"><link rel="apple-touch-icon" href="icon-192.png"><link rel="icon" href="icon.svg"><title>InZona</title>
 <link rel="preconnect" href="https://fonts.googleapis.com"><link rel="preconnect" href="https://fonts.gstatic.com" crossorigin><link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Archivo:wdth,wght@62..125,400..800&display=swap">
 <style>
 :root{padding:env(safe-area-inset-top) 0 0}
@@ -138,6 +138,22 @@ button{cursor:pointer}
 .toast{position:absolute;left:50%;top:14px;transform:translateX(-50%);background:var(--ink);color:var(--surface);padding:10px 16px;border-radius:12px;font-weight:600;z-index:20;box-shadow:var(--shadow);max-width:calc(100% - 32px);font-size:14px}
 .day{font-size:12.5px;font-weight:800;letter-spacing:.06em;text-transform:uppercase;color:var(--muted);margin:10px 2px 2px}
 .demo{font-size:12px;color:var(--warn);font-weight:700}
+.nearbar{position:absolute;left:12px;right:12px;bottom:28px;z-index:4;background:var(--surface);border-radius:16px;box-shadow:var(--shadow);padding:10px 12px 12px;border:1px solid var(--line)}
+.nearbar .nh{display:flex;align-items:center;gap:8px;margin-bottom:8px}
+.nearbar .nh b{flex:1;min-width:0;font-size:14.5px;line-height:1.25}
+.nearbar .nh .gps{width:9px;height:9px;border-radius:50%;background:#2f7cf6;box-shadow:0 0 0 4px #2f7cf62e;flex:none}
+.nearbar .rad{border:1px solid var(--line);background:var(--surface);border-radius:999px;padding:4px 10px;font-weight:700;font-size:12.5px;color:var(--ink)}
+.nearbar .cl{width:30px;height:30px;border:0;background:none;display:grid;place-items:center;color:var(--muted);padding:0}
+.nearbar .cl svg,.nearbar .nc svg{width:18px;height:18px}
+.nearbar .row2{display:flex;gap:8px;overflow-x:auto;scrollbar-width:none;margin:0 -2px;padding:0 2px}
+.nearbar .row2::-webkit-scrollbar{display:none}
+.nearbar .nc{flex:0 0 auto;min-width:140px;max-width:190px;text-align:left;border:1px solid var(--line);border-radius:12px;background:var(--surface);padding:8px 10px;display:grid;gap:1px}
+.nearbar .nc .t{font-weight:700;font-size:13.5px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.nearbar .nc .m{font-size:12px;color:var(--muted);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.nearbar .nc .d{font-weight:800;font-size:15px;color:var(--ink);display:flex;align-items:center;gap:6px}
+.nearbar .nc .d i{width:8px;height:8px;border-radius:50%;display:inline-block}
+.nearbar .nc.all{place-items:center;min-width:92px;font-weight:700;color:var(--brand);font-size:13px}
+.nearbar .msg{font-size:13.5px;color:var(--muted);margin:0 0 8px}
 @media (prefers-reduced-motion:reduce){*{transition:none!important}}
 
 </style>
@@ -152,6 +168,7 @@ button{cursor:pointer}
   <div id="banner" hidden></div>
   <div class="float" style="top:12px" id="floatTop"></div>
   <div class="legend" id="legend"><span><i style="background:var(--ok)"></i>Visitato &lt;30 gg</span><span><i style="background:var(--warn)"></i>30–90 gg</span><span><i style="background:var(--never)"></i>Da visitare</span></div>
+  <div class="nearbar" id="nearbar" hidden></div>
   <div class="attrib" id="attrib">Mappa in caricamento…</div>
   <section class="panel" id="view-list" hidden></section>
   <section class="panel" id="view-near" hidden></section>
@@ -261,7 +278,7 @@ class MapView{
  fit(pts,pad=60,maxZ=13){if(!pts.length)return;if(pts.length===1)return this.flyTo(pts[0].lat,pts[0].lon,Math.min(maxZ,13));let la=[Infinity,-Infinity],lo=[Infinity,-Infinity];pts.forEach(p=>{la[0]=Math.min(la[0],p.lat);la[1]=Math.max(la[1],p.lat);lo[0]=Math.min(lo[0],p.lon);lo[1]=Math.max(lo[1],p.lon)});let z=maxZ;for(;z>this.minZ;z-=.25){const dx=lon2x(lo[1],z)-lon2x(lo[0],z),dy=lat2y(la[0],z)-lat2y(la[1],z);if(dx<this.w-pad*2&&dy<this.h-pad*2.4)break}this.flyTo((la[0]+la[1])/2,(lo[0]+lo[1])/2,z)}
  kmToPx(km){return km*1000/(156543.03*Math.cos(this.center.lat*D2R)/Math.pow(2,this.zoom))}
  /* --- tile --- */
- tile(z,x,y){const k=z+'/'+x+'/'+y;let t=this.tiles.get(k);if(t)return t;if(this.tileMode==='off')return null;const img=new Image();t={img,ok:false};img.onload=()=>{t.ok=true;this.tileOk++;if(this.tileMode!=='on'){this.tileMode='on';this.onStatus('tiles')}this.redraw()};img.onerror=()=>{this.tileErr++;if(!this.tileOk&&this.tileErr>4){this.tileMode='off';this.onStatus('offline');this.redraw()}};img.src=`https://tile.openstreetmap.org/${z}/${x}/${y}.png`;this.tiles.set(k,t);if(this.tiles.size>400){const f=this.tiles.keys().next().value;this.tiles.delete(f)}return t}
+ tile(z,x,y){const k=z+'/'+x+'/'+y;let t=this.tiles.get(k);if(t)return t;if(this.tileMode==='off')return null;const img=new Image();t={img,ok:false};img.onload=()=>{t.ok=true;this.tileOk++;if(this.tileMode!=='on'){this.tileMode='on';this.onStatus('tiles')}this.redraw()};img.onerror=()=>{this.tileErr++;if(!this.tileOk&&this.tileErr>4){if(!this.alt){this.alt=1;this.tileErr=0;this.tiles.clear();this.redraw();return}this.tileMode='off';this.onStatus('offline');this.redraw()}};img.src=this.alt?`https://${'abcd'[(x+y)&3]}.basemaps.cartocdn.com/rastertiles/voyager/${z}/${x}/${y}.png`:`https://tile.openstreetmap.org/${z}/${x}/${y}.png`;this.tiles.set(k,t);if(this.tiles.size>400){const f=this.tiles.keys().next().value;this.tiles.delete(f)}return t}
  drawTiles(ctx){const tz=Math.max(0,Math.min(19,Math.round(this.zoom))),sc=Math.pow(2,this.zoom-tz);const cx=lon2x(this.center.lon,tz),cy=lat2y(this.center.lat,tz);const x0=cx-this.w/2/sc,y0=cy-this.h/2/sc;const n=Math.pow(2,tz);const a=Math.floor(x0/TS),b=Math.floor((x0+this.w/sc)/TS),c=Math.floor(y0/TS),d=Math.floor((y0+this.h/sc)/TS);if(this.dark)ctx.filter='invert(1) hue-rotate(180deg) brightness(.92) contrast(.88) saturate(.7)';for(let x=a;x<=b;x++)for(let y=c;y<=d;y++){if(y<0||y>=n)continue;const t=this.tile(tz,((x%n)+n)%n,y);if(t&&t.ok)ctx.drawImage(t.img,Math.round((x*TS-x0)*sc),Math.round((y*TS-y0)*sc),Math.ceil(TS*sc)+1,Math.ceil(TS*sc)+1)}ctx.filter='none'}
  /* --- mappa schematica offline --- */
  drawSchematic(ctx){const C=this.colors;ctx.fillStyle=C['--map-land'];ctx.fillRect(0,0,this.w,this.h);
@@ -379,9 +396,10 @@ function closeModal(){$('#scrim').hidden=true;$('#modal').innerHTML=''}
 $('#scrim').addEventListener('click',e=>{if(e.target.id==='scrim'&&!$('#modal').dataset.lock){closeModal();if(ask.res){ask.res(false);ask.res=null}}});
 function renderNav(){const n=allClients().filter(needsCheck).length;const tabs=[['map','Mappa',IC.map],['list','Clienti',IC.list],['near','Vicini',IC.near],['history','Cronologia',IC.hist],['more','Elenchi',IC.folder]];
  $('#nav').innerHTML=tabs.map(([k,l,ic])=>`<button data-act="tab" data-v="${k}" ${view===k?'aria-current="page"':''}>${ic}<span>${l}</span>${k==='list'&&n?`<span class="badge num">${n}</span>`:''}</button>`).join('')}
-function setView(v){view=v;['list','near','history','more'].forEach(k=>$('#view-'+k).hidden=k!==v);if(v!=='map')closeSheet();renderNav();if(v==='list')renderList();if(v==='near')renderNear();if(v==='history')renderHistory();if(v==='more')renderMore();if(v==='map'){map.resize()}renderBanner()}
+function setView(v){view=v;['list','near','history','more'].forEach(k=>$('#view-'+k).hidden=k!==v);if(v!=='map')closeSheet();renderNav();if(v==='list')renderList();if(v==='near')renderNear();if(v==='history')renderHistory();if(v==='more')renderMore();if(v==='map'){map.resize()}renderBanner();if(typeof renderNearBar==='function')renderNearBar()}
 function renderTop(){$('#projName').textContent=P()?P().name:'Nessun elenco';$('#addBtn').innerHTML=IC.plus;$('#floatTop').innerHTML=`<button class="iconbtn" data-act="locate" aria-label="La mia posizione">${IC.locate}</button><button class="iconbtn" data-act="fitAll" aria-label="Mostra tutti i clienti">${IC.fit}</button>`;renderBanner()}
 function renderBanner(){const b=$('#banner');if(pickFor){const c=findClient(pickFor);b.className='banner';b.innerHTML=`<span>Tocca la mappa dove si trova <b>${esc(c?.azienda)}</b></span><button data-act="cancelPick">Annulla</button>`;b.hidden=false;return}
+ const miss=allClients().filter(c=>!hasPos(c)).length;if(miss&&view==='map'&&!openId&&!geoBusy){b.className='banner';b.innerHTML=`<span><b>${miss}</b> ${miss===1?'cliente non è':'clienti non sono'} ancora sulla mappa</span><button data-act="retryGeo">Cerca ora</button>`;b.hidden=false;return}
  const n=allClients().filter(needsCheck).length;if(n&&view==='map'&&!openId){b.className='banner';b.innerHTML=`<span><b>${n}</b> ${n===1?'posizione da confermare':'posizioni da confermare'}</span><button data-act="verifyAll">Verifica</button>`;b.hidden=false}else b.hidden=true}
 function colorFor(c){const k=visitState(c).k;return k==='ok'?map.colors['--ok']:k==='warn'?map.colors['--warn']:map.colors['--never']}
 function refreshMarkers(){if(!map.colors['--ok'])map.readColors();const nearIds=near.ids;map.markers=allClients().filter(hasPos).map(c=>({id:c.id,lat:c.lat,lon:c.lon,label:c.azienda,color:colorFor(c),flag:needsCheck(c),dim:nearIds?!nearIds.has(c.id):false,pri:nearIds&&nearIds.has(c.id)?1:0}));map.me=S.me;map.redraw();renderNav();renderBanner()}
@@ -410,9 +428,9 @@ function openCard(id,fly=true){const c=findClient(id);if(!c)return;openId=id;map
   ${extras.map(([k,v])=>`<dt>${esc(k)}</dt><dd>${esc(v)}</dd><span></span>`).join('')}
  </dl>
  ${c.note?`<div class="note">${esc(c.note)}</div>`:''}`;
- $('#sheet').classList.remove('closed');renderBanner();map.redraw()}
+ $('#sheet').classList.remove('closed');renderBanner();renderNearBar();map.redraw()}
 function focusTop(c,z=Math.max(map.zoom,12)){const y=lat2y(c.lat,z)+(map.h/2-Math.max(70,map.h*0.16));map.flyTo(y2lat(y,z),c.lon,z)}
-function closeSheet(){$('#sheet').classList.add('closed');openId=null;if(map){map.selected=null;map.redraw()}renderBanner()}
+function closeSheet(){$('#sheet').classList.add('closed');openId=null;if(map){map.selected=null;map.redraw()}renderBanner();if(typeof renderNearBar==='function')renderNearBar()}
 
 /* ---------- navigatore ---------- */
 function navUrls(c){const ll=c.lat+','+c.lon;return{google:`https://www.google.com/maps/dir/?api=1&destination=${ll}&travelmode=driving`,apple:`https://maps.apple.com/?daddr=${ll}&dirflg=d`,waze:`https://waze.com/ul?ll=${ll}&navigate=yes`}}
@@ -427,12 +445,33 @@ function askNavigate(id){const c=findClient(id);if(!c||!hasPos(c))return;const u
 
 /* ---------- visite e registrazione viaggi ---------- */
 function addVisit(c,kind='manuale'){S.visits.push({id:uid(),pid:P().id,cid:c.id,name:c.azienda,t:Date.now(),kind});save();refreshMarkers()}
-let watchId=null;
-function startTrip(){if(watchId!=null||!navigator.geolocation)return;watchId=navigator.geolocation.watchPosition(pos=>{S.me={lat:pos.coords.latitude,lon:pos.coords.longitude,t:Date.now()};map.me=S.me;map.redraw();
-  if(!S.settings.trip)return;const today=new Date().toDateString();allClients().filter(hasPos).forEach(c=>{if(haversine(S.me,c)<0.15){const done=S.visits.some(v=>v.cid===c.id&&new Date(v.t).toDateString()===today);if(!done){addVisit(c,'auto');toast('Visita registrata: '+c.azienda)}}})},()=>{},{enableHighAccuracy:true,maximumAge:30000})}
+let watchId=null,gpsState='off',autoNear=true,nearAt=null,firstFix=true;
+function startTrip(){startGPS()}
+function startGPS(){if(watchId!=null)return;if(!navigator.geolocation){gpsState='none';renderNearBar();return}gpsState='wait';renderNearBar();
+ watchId=navigator.geolocation.watchPosition(pos=>{gpsState='ok';S.me={lat:pos.coords.latitude,lon:pos.coords.longitude,acc:pos.coords.accuracy,t:Date.now()};map.me=S.me;
+  if(firstFix){firstFix=false;save();applyAutoNear(true)}else if(!nearAt||haversine(nearAt,S.me)>0.3){save();applyAutoNear(false)}else{map.redraw();renderNearBar()}
+  if(view==='near'&&near.origin==='me')renderNear();
+  if(!S.settings.trip)return;const today=new Date().toDateString();allClients().filter(hasPos).forEach(c=>{if(haversine(S.me,c)<0.15){const done=S.visits.some(v=>v.cid===c.id&&new Date(v.t).toDateString()===today);if(!done){addVisit(c,'auto');toast('Visita registrata: '+c.azienda)}}})},
+  err=>{if(err&&err.code===1){gpsState='denied';navigator.geolocation.clearWatch(watchId);watchId=null}else if(gpsState!=='ok')gpsState='err';renderNearBar()},
+  {enableHighAccuracy:true,maximumAge:20000,timeout:20000})}
+function nearMe(){if(!S.me)return[];return allClients().filter(hasPos).map(c=>({c,d:haversine(S.me,c)})).sort((a,b)=>a.d-b.d)}
+function applyAutoNear(fly){if(!S.me)return;nearAt={lat:S.me.lat,lon:S.me.lon};
+ if(autoNear&&view==='map'&&!pickFor){const all=nearMe(),res=all.filter(x=>x.d<=near.radius);near.ids=new Set(res.map(x=>x.c.id));map.circle={lat:S.me.lat,lon:S.me.lon,km:near.radius};refreshMarkers();
+  if(fly&&!openId){if(res.length)map.fit([S.me,...res.slice(0,15).map(x=>x.c)],70,14);else map.flyTo(S.me.lat,S.me.lon,Math.max(10,Math.min(13,13-Math.log2(near.radius/5))))}}
+ else{map.redraw()}
+ renderNearBar()}
+function renderNearBar(){const el=$('#nearbar');if(!el)return;const show=autoNear&&view==='map'&&!openId&&!pickFor&&!verifyQ.length&&gpsState!=='off';el.hidden=!show;$('#legend').hidden=show;if(!show)return;
+ const head=(t,extra='')=>`<div class="nh"><span class="gps"></span><b>${t}</b>${extra}<button class="cl" data-act="nearBarClose" aria-label="Nascondi">${IC.x}</button></div>`;
+ if(gpsState==='wait'&&!S.me){el.innerHTML=head('Cerco la tua posizione…')+`<p class="msg">Consenti a InZona di usare la posizione per vedere i clienti vicini.</p>`;return}
+ if(gpsState==='denied'||gpsState==='none'||(!S.me&&gpsState==='err')){el.innerHTML=head('Posizione non disponibile')+`<p class="msg">${gpsState==='denied'?'Hai negato l’accesso alla posizione. Attivalo nelle impostazioni del telefono (App › InZona › Autorizzazioni › Posizione).':'Accendi il GPS del telefono e riprova.'}</p><button class="btn primary block" data-act="gpsRetry">${IC.locate} Riprova</button>`;return}
+ const all=nearMe(),res=all.filter(x=>x.d<=near.radius);const rad=`<button class="rad num" data-act="nearRad" aria-label="Cambia raggio">${near.radius} km ▾</button>`;
+ if(!all.length){el.innerHTML=head('Nessun cliente sulla mappa',rad)+`<p class="msg">Carica un elenco da “Elenchi”: i clienti compariranno qui in ordine di distanza.</p>`;return}
+ const card=({c,d})=>`<button class="nc" data-act="openFromList" data-id="${c.id}"><span class="d num"><i style="background:${colorFor(c)}"></i>${fmtKm(d)}</span><span class="t">${esc(c.azienda)}</span><span class="m">${esc(c.comune||c.referente||'')}</span></button>`;
+ if(!res.length){el.innerHTML=head(`Nessun cliente entro ${near.radius} km`,rad)+`<div class="row2">${card(all[0])}<button class="nc all" data-act="nearWiden">Allarga<br>il raggio</button></div>`;return}
+ el.innerHTML=head(`${res.length} ${res.length===1?'cliente':'clienti'} vicino a te`,rad)+`<div class="row2">${res.slice(0,8).map(card).join('')}<button class="nc all" data-act="nearAll">Vedi tutti<br>›</button></div>`}
 function askTrip(){ $('#modal').dataset.lock='1';openModal(`<div class="brand" style="margin-bottom:10px">${$('.brand svg').outerHTML}<span class="word">in<b>Zona</b></span></div><h3>Vuoi che registri i tuoi viaggi?</h3><p>Quando ti fermi presso un cliente, InZona annota la visita nella cronologia. Così sai sempre quando l’hai visto l’ultima volta. La posizione resta solo su questo telefono.</p>
  <div class="stack"><button class="btn primary block" data-act="trip" data-v="1">${IC.check} Sì, registra le visite</button><button class="btn block" data-act="trip" data-v="0">No, le segno io a mano</button></div><p style="margin-top:12px;font-size:12.5px">Puoi cambiare idea in qualsiasi momento da Cronologia.</p>`)}
-function locate(fly=true){if(!navigator.geolocation){toast('Posizione non disponibile su questo dispositivo');return}navigator.geolocation.getCurrentPosition(pos=>{S.me={lat:pos.coords.latitude,lon:pos.coords.longitude,t:Date.now()};save();map.me=S.me;if(fly)map.flyTo(S.me.lat,S.me.lon,Math.max(map.zoom,12));refreshMarkers();if(view==='near')renderNear()},()=>toast('Consenti l’accesso alla posizione per vedere dove sei'),{enableHighAccuracy:true,timeout:10000})}
+function locate(fly=true){if(!navigator.geolocation){toast('Posizione non disponibile su questo dispositivo');return}if(watchId==null)startGPS();navigator.geolocation.getCurrentPosition(pos=>{gpsState='ok';S.me={lat:pos.coords.latitude,lon:pos.coords.longitude,t:Date.now()};save();map.me=S.me;if(fly&&view==='map'){autoNear=true;applyAutoNear(true)}else{refreshMarkers();renderNearBar()}if(view==='near')renderNear()},e=>{if(e&&e.code===1){gpsState='denied';renderNearBar()}toast('Consenti l’accesso alla posizione per vedere dove sei')},{enableHighAccuracy:true,timeout:15000,maximumAge:10000})}
 
 /* ---------- elenco clienti ---------- */
 function renderList(){const el=$('#view-list');const cs=allClients();const q=norm(listQ.q);
@@ -517,24 +556,42 @@ async function doImport(){FIELDS.forEach(([k])=>{imp.map[k]=$('#map_'+k).value||
  const h=imp.file.headers,idx=x=>h.indexOf(x);const latH=h.find(x=>/^(lat|latitudine)$/i.test(norm(x))),lonH=h.find(x=>/^(lon|lng|long|longitudine)$/i.test(norm(x)));const used=new Set(Object.values(imp.map).filter(Boolean).concat([latH,lonH]));
  const p={id:uid(),name:$('#impName').value.trim()||imp.name,createdAt:Date.now(),file:imp.file,map:imp.map,clients:[]};
  imp.data.forEach(r=>{const c={id:uid(),extra:{},createdAt:Date.now()};FIELDS.forEach(([k])=>c[k]=imp.map[k]?String(r[idx(imp.map[k])]??'').trim():'');h.forEach((x,i)=>{if(!used.has(x))c.extra[x]=r[i]??''});if(!c.azienda)return;const la=latH&&parseFloat(String(r[idx(latH)]).replace(',','.')),lo=lonH&&parseFloat(String(r[idx(lonH)]).replace(',','.'));if(la&&lo){c.lat=la;c.lon=lo;c.geo={status:'ok',label:'Coordinate dal file'}}p.clients.push(c)});
- S.projects.push(p);S.active=p.id;save();$('#modal').dataset.lock='1';
- const todo=p.clients.filter(c=>!hasPos(c));openModal(`<h3>Cerco i clienti sulla mappa…</h3><p id="geoMsg">0 di ${todo.length}</p><div class="progress"><i id="geoBar"></i></div><p style="margin-top:10px;font-size:12.5px">Uso l’indirizzo e il nome dell’azienda. Se non sono sicuro, alla fine ti chiedo conferma.</p>`);
- for(let i=0;i<todo.length;i++){await geocode(todo[i]);$('#geoMsg').textContent=`${i+1} di ${todo.length} · ${todo[i].azienda}`;$('#geoBar').style.width=((i+1)/todo.length*100)+'%'}
- save();delete $('#modal').dataset.lock;renderTop();refreshMarkers();map.fit(p.clients.filter(hasPos));const k=p.clients.filter(needsCheck).length;
- openModal(`<h3>Fatto: ${p.clients.length} clienti importati</h3><p>${k?`<b>${p.clients.length-k}</b> sono sulla mappa con certezza. Per <b>${k}</b> non sono sicuro della posizione: ti chiedo di confermarli uno alla volta.${netOK?'':' (Senza internet ho potuto usare solo il comune.)'}`:'Tutti i clienti sono sulla mappa.'}</p><div class="stack">${k?`<button class="btn primary block" data-act="verifyAll">Verifica ora</button>`:''}<button class="btn block" data-act="closeModal">${k?'Più tardi':'Vai alla mappa'}</button></div>`);setView('map')}
+ S.projects.push(p);S.active=p.id;save();
+ const todo=p.clients.filter(c=>!hasPos(c));await geocodeAll(todo,'Cerco i clienti sulla mappa…');
+ map.fit(p.clients.filter(hasPos));const k=p.clients.filter(needsCheck).length;
+ openModal(`<h3>Fatto: ${p.clients.length} clienti importati</h3><p>${k?`<b>${p.clients.length-k}</b> sono sulla mappa con certezza. Per <b>${k}</b> non sono sicuro della posizione: ti chiedo di confermarli uno alla volta.${netOK?'':' (Il servizio di ricerca indirizzi non rispondeva: per alcuni ho usato solo il comune.)'}`:'Tutti i clienti sono sulla mappa.'}${p.clients.length&&!p.clients.some(hasPos)?'<br><br><b>Non sono riuscito a collegarmi al servizio che trova gli indirizzi.</b> Controlla la connessione e tocca “Cerca ora” sulla mappa.':''}</p><div class="stack">${k?`<button class="btn primary block" data-act="verifyAll">Verifica ora</button>`:''}<button class="btn block" data-act="closeModal">${k?'Più tardi':'Vai alla mappa'}</button></div>`);setView('map')}
 
 /* ---------- ricerca posizione ---------- */
-let netOK=true,lastReq=0;
-async function nomi(q){if(!netOK)return[];const wait=1100-(Date.now()-lastReq);if(wait>0)await new Promise(r=>setTimeout(r,wait));lastReq=Date.now();try{const r=await fetch('https://nominatim.openstreetmap.org/search?format=jsonv2&countrycodes=it&limit=3&accept-language=it&q='+encodeURIComponent(q));if(!r.ok)throw 0;return await r.json()}catch(e){netOK=false;return[]}}
+let netOK=true,netFail=0,lastReq=0,geoBusy=false;
 const short=d=>String(d||'').split(',').slice(0,4).join(',');
-async function geocode(c){const cands=[];const addr=[c.indirizzo,c.cap,c.comune,c.provincia].filter(Boolean).join(', ');
- if(c.indirizzo&&c.comune){(await nomi(addr)).slice(0,2).forEach(r=>cands.push({lat:+r.lat,lon:+r.lon,label:short(r.display_name),how:'Trovata dall’indirizzo',k:'addr'}))}
- if(c.azienda){const r=(await nomi([c.azienda,c.comune].filter(Boolean).join(', '))).filter(r=>!['city','town','village','administrative'].includes(r.type));r.slice(0,2).forEach(x=>cands.push({lat:+x.lat,lon:+x.lon,label:short(x.display_name),how:'Trovata cercando il nome dell’azienda',k:'name'}))}
- const g=gazFind(c.comune);if(g)cands.push({lat:g.lat,lon:g.lon,label:'Centro di '+g.name+' ('+g.prov+')',how:'Posizione approssimativa sul comune',k:'town'});
+async function getJSON(url,ms=10000){const ctl=new AbortController();const t=setTimeout(()=>ctl.abort(),ms);try{const r=await fetch(url,{signal:ctl.signal});if(!r.ok)throw new Error('HTTP '+r.status);return await r.json()}finally{clearTimeout(t)}}
+const TOWN=['city','town','village','hamlet','municipality','administrative','county','state','suburb','locality','postcode'];
+async function nomi(q){if(navigator.onLine===false){netOK=false;return[]}
+ // 1) Nominatim (OpenStreetMap) – max una richiesta al secondo
+ const wait=1100-(Date.now()-lastReq);if(wait>0)await new Promise(r=>setTimeout(r,wait));lastReq=Date.now();
+ try{const j=await getJSON('https://nominatim.openstreetmap.org/search?format=jsonv2&countrycodes=it&limit=3&accept-language=it&q='+encodeURIComponent(q));netOK=true;netFail=0;if(j.length)return j.map(r=>({lat:+r.lat,lon:+r.lon,label:short(r.display_name),town:TOWN.includes(r.type)||r.category==='boundary'||r.category==='place'}))}catch(e){netFail++}
+ // 2) Photon (komoot) come riserva, se Nominatim non risponde o non trova nulla
+ try{const j=await getJSON('https://photon.komoot.io/api/?limit=4&lat=45.5&lon=10.0&q='+encodeURIComponent(q));netOK=true;netFail=0;return (j.features||[]).filter(f=>(f.properties.countrycode||'').toUpperCase()==='IT').slice(0,3).map(f=>{const p=f.properties;return{lat:f.geometry.coordinates[1],lon:f.geometry.coordinates[0],label:[p.name,[p.street,p.housenumber].filter(Boolean).join(' '),[p.postcode,p.city||p.county].filter(Boolean).join(' ')].filter(Boolean).join(', '),town:TOWN.includes(p.type)||p.osm_key==='place'||p.osm_key==='boundary'}})}
+ catch(e){netFail++;if(netFail>=6)netOK=false;return[]}}
+async function geocode(c){const cands=[];const add=(arr,how,k)=>arr.slice(0,2).forEach(r=>{if(!cands.some(x=>x.k===k&&haversine(x,r)<0.03))cands.push({lat:r.lat,lon:r.lon,label:r.label,how,k})});
+ const place=[c.cap,c.comune,c.provincia].filter(Boolean).join(' ');
+ if(c.indirizzo){const r=(await nomi([c.indirizzo,place].filter(Boolean).join(', '))).filter(x=>!x.town);add(r,'Trovata dall’indirizzo','addr');
+  if(!r.length&&place){const via=c.indirizzo.replace(/[\s,]+(n\.?|nr\.?|civ\.?)?\s*\d+\s*[a-z]?(\/\s*\w+)?\s*$/i,'').trim();if(via&&via!==c.indirizzo)add((await nomi(via+', '+place)).filter(x=>!x.town),'Trovata dalla via (senza numero civico)','addr')}}
+ if(c.azienda){const r=(await nomi([c.azienda,c.comune||c.provincia].filter(Boolean).join(', '))).filter(x=>!x.town);add(r,'Trovata cercando il nome dell’azienda','name')}
+ let g=gazFind(c.comune);if(!g&&!c.comune&&c.indirizzo){const a=' '+norm(c.indirizzo)+' ';const h=GAZ.filter(x=>a.includes(' '+norm(x[0])+' ')).sort((x,y)=>y[0].length-x[0].length)[0];if(h)g={name:h[0],prov:h[1],lat:h[2],lon:h[3]}}let town=g?{lat:g.lat,lon:g.lon,label:'Centro di '+g.name+' ('+g.prov+')'}:null;
+ if(!town&&(c.comune||c.cap)&&netOK){const t=(await nomi([c.cap,c.comune,c.provincia,'Italia'].filter(Boolean).join(', ')))[0];if(t)town={lat:t.lat,lon:t.lon,label:t.label}}
+ if(town)cands.push({...town,how:'Posizione approssimativa sul comune',k:'town'});
  let status='missing';const a=cands.find(x=>x.k==='addr'),n=cands.find(x=>x.k==='name');
- if(a&&(!n||haversine(a,n)<0.4))status='ok';else if(a||n)status='confirm';else if(g)status='approx';
- if(!cands.length&&c.comune&&netOK){const t=await nomi(c.comune+', Italia');if(t[0]){cands.push({lat:+t[0].lat,lon:+t[0].lon,label:short(t[0].display_name),how:'Posizione approssimativa sul comune',k:'town'});status='approx'}}
+ if(a&&(!n||haversine(a,n)<0.4))status='ok';else if(a||n)status='confirm';else if(town)status='approx';
  const best=cands[0];if(best){c.lat=best.lat;c.lon=best.lon}else{delete c.lat;delete c.lon}c.geo={status,label:best?best.label:'',how:best?best.how:'',cands,ci:0}}
+async function geocodeAll(list,title){if(!list.length)return;geoBusy=true;netOK=true;netFail=0;$('#modal').dataset.lock='1';
+ openModal(`<h3>${esc(title)}</h3><p id="geoMsg">0 di ${list.length}</p><div class="progress"><i id="geoBar"></i></div><p style="margin-top:10px;font-size:12.5px">Uso l’indirizzo e il nome dell’azienda. Se non sono sicuro, alla fine ti chiedo conferma. Tieni l’app aperta.</p>`);
+ for(let i=0;i<list.length;i++){await geocode(list[i]);if(i%5===4)save();const m=$('#geoMsg');if(m){m.textContent=`${i+1} di ${list.length} · ${list[i].azienda}`;$('#geoBar').style.width=((i+1)/list.length*100)+'%'}if(!netOK&&!hasPos(list[i])&&i>=2&&list.slice(0,i+1).every(c=>!hasPos(c)))break}
+ geoBusy=false;save();delete $('#modal').dataset.lock;renderTop();refreshMarkers()}
+async function retryGeo(){const p=P();const todo=p.clients.filter(c=>!hasPos(c));if(!todo.length)return;if(navigator.onLine===false){toast('Serve internet per cercare gli indirizzi');return}
+ await geocodeAll(todo,'Cerco di nuovo i clienti sulla mappa…');const still=todo.filter(c=>!hasPos(c)).length,k=todo.filter(needsCheck).length;
+ map.fit(p.clients.filter(hasPos));
+ openModal(`<h3>${todo.length-still} di ${todo.length} ora sono sulla mappa</h3><p>${still?`Per <b>${still}</b> non ho trovato l’indirizzo${netOK?'':' (il servizio di ricerca indirizzi non risponde: riprova più tardi)'}. Puoi correggere l’indirizzo o indicarli tu sulla mappa.`:'Tutti trovati.'}</p><div class="stack">${k?`<button class="btn primary block" data-act="verifyAll">Verifica ora</button>`:''}<button class="btn block" data-act="closeModal">Chiudi</button></div>`);setView('map')}
 
 /* ---------- conferma posizioni ---------- */
 function startVerify(ids){verifyQ=ids||allClients().filter(needsCheck).map(c=>c.id);closeModal();setView('map');nextVerify()}
@@ -579,7 +636,13 @@ async function exportProj(id,fmt){const p=S.projects.find(x=>x.id===id);if(fmt==
 const A={
  askOk:()=>{const i=$('#askIn');const v=i?i.value:true;closeModal();ask.res&&ask.res(v);ask.res=null},
  askNo:()=>{closeModal();ask.res&&ask.res(false);ask.res=null},
- tab:d=>{near.ids=null;map.circle=null;refreshMarkers();setView(d.v)},
+ tab:d=>{near.ids=null;map.circle=null;refreshMarkers();setView(d.v);if(d.v==='map'&&autoNear&&S.me)applyAutoNear(false)},
+ retryGeo:()=>retryGeo(),
+ gpsRetry:()=>{gpsState='wait';firstFix=true;autoNear=true;if(watchId!=null){navigator.geolocation.clearWatch(watchId);watchId=null}startGPS();locate(true)},
+ nearBarClose:()=>{autoNear=false;near.ids=null;map.circle=null;refreshMarkers();renderNearBar()},
+ nearRad:()=>{const R=[5,10,20,30,50];near.radius=R[(R.indexOf(near.radius)+1)%R.length];S.settings.radius=near.radius;save();applyAutoNear(true)},
+ nearWiden:()=>{const R=[5,10,20,30,50,100];const all=nearMe();const need=all.length?all[0].d:50;near.radius=R.find(r=>r>=need)||100;S.settings.radius=near.radius;save();applyAutoNear(true)},
+ nearAll:()=>{near.origin='me';setView('near')},
  closeModal, closeSheet:()=>{verifyQ=[];closeSheet()},
  newClient:()=>clientForm(null), editClient:d=>clientForm(d.id), saveClient:d=>saveClient(d.id||null),
  delClient:async d=>{const c=findClient(d.id);if(!await ask('Eliminare '+c.azienda+'?',{ok:'Sì, elimina',danger:true}))return;P().clients=P().clients.filter(x=>x.id!==d.id);save();closeModal();closeSheet();refreshMarkers();if(view==='list')renderList();toast('Cliente eliminato')},
@@ -589,15 +652,15 @@ const A={
  openFromList:d=>{setView('map');openCard(d.id)},
  listF:d=>{listQ.f=d.v;renderList()}, listSort:()=>{listQ.sort=listQ.sort==='az'?'dist':'az';if(listQ.sort==='dist'&&!S.me)locate(false);renderList()},
  radius:d=>{near.radius=+d.v;S.settings.radius=near.radius;save();renderNear()},
- nearOnMap:()=>{const o=nearOrigin();const res=nearList();near.ids=new Set(res.map(x=>x.c.id));if(o.id)near.ids.add(o.id);map.circle={lat:o.lat,lon:o.lon,km:near.radius};setView('map');refreshMarkers();map.fit([o,...res.map(x=>x.c)],50,14);toast(res.length+' clienti entro '+near.radius+' km')},
+ nearOnMap:()=>{autoNear=false;const o=nearOrigin();const res=nearList();near.ids=new Set(res.map(x=>x.c.id));if(o.id)near.ids.add(o.id);map.circle={lat:o.lat,lon:o.lon,km:near.radius};setView('map');refreshMarkers();map.fit([o,...res.map(x=>x.c)],50,14);toast(res.length+' clienti entro '+near.radius+' km')},
  tour, locate:()=>locate(true),
- fitAll:()=>{near.ids=null;map.circle=null;refreshMarkers();map.fit(allClients().filter(hasPos))},
+ fitAll:()=>{autoNear=false;renderNearBar();near.ids=null;map.circle=null;refreshMarkers();map.fit(allClients().filter(hasPos))},
  delVisit:d=>{S.visits=S.visits.filter(v=>v.id!==d.id);save();renderHistory();refreshMarkers()},
- trip:d=>{S.settings.trip=d.v==='1';save();delete $('#modal').dataset.lock;closeModal();if(S.settings.trip){startTrip();toast('Registrazione viaggi attiva')}},
+ trip:d=>{S.settings.trip=d.v==='1';save();delete $('#modal').dataset.lock;closeModal();startGPS();if(S.settings.trip)toast('Registrazione viaggi attiva')},
  verifyAll:()=>startVerify(), verifyOne:d=>startVerify([d.id]),
  vYes:d=>{const c=findClient(d.id);c.geo.status='ok';save();verifyQ.shift();refreshMarkers();toast('Posizione confermata');nextVerify()},
  vNext:d=>{const c=findClient(d.id),g=c.geo;g.ci=((g.ci||0)+1)%g.cands.length;const k=g.cands[g.ci];c.lat=k.lat;c.lon=k.lon;g.label=k.label;g.how=k.how;save();refreshMarkers();nextVerify()},
- vPick:d=>{pickFor=d.id;closeSheet();map.pick=true;renderBanner();map.redraw()},
+ vPick:d=>{pickFor=d.id;closeSheet();map.pick=true;renderBanner();renderNearBar();map.redraw()},
  vSkip:()=>{verifyQ.shift();nextVerify()},
  cancelPick:()=>{pickFor=null;map.pick=false;renderBanner();map.redraw();if(verifyQ.length)nextVerify()},
  projects:()=>openModal(`<h3>Elenchi clienti</h3><div class="stack">${S.projects.map(p=>`<button class="item" data-act="useProj" data-id="${p.id}"><span class="t">${esc(p.name)}</span><span class="m num">${esc(p.file.name)} · ${p.clients.length} clienti</span><span class="r">${p.id===S.active?'<span class="pill p-ok">In uso</span>':''}</span></button>`).join('')}<button class="btn primary block" data-act="import">${IC.up} Carica un nuovo elenco</button></div>`),
@@ -620,13 +683,14 @@ document.addEventListener('keydown',e=>{if(e.key==='Escape'){if(!$('#scrim').hid
 S=load()||seed();near.radius=S.settings.radius||10;
 map=new MapView($('#map'),{
  onMarker:m=>{if(pickFor)return;if(verifyQ.length&&verifyQ[0]!==m.id)verifyQ=[];openCard(m.id,true)},
- onTap:(ll)=>{if(pickFor){const c=findClient(pickFor);c.lat=ll.lat;c.lon=ll.lon;c.geo={status:'manual',label:'Indicata a mano'};pickFor=null;map.pick=false;save();refreshMarkers();toast('Posizione di '+c.azienda+' salvata');if(verifyQ[0]===c.id)verifyQ.shift();if(verifyQ.length)nextVerify();else openCard(c.id,false);return}if(openId&&!verifyQ.length)closeSheet()},
+ onTap:(ll)=>{if(pickFor){const c=findClient(pickFor);c.lat=ll.lat;c.lon=ll.lon;c.geo={status:'manual',label:'Indicata a mano'};pickFor=null;map.pick=false;save();refreshMarkers();renderNearBar();toast('Posizione di '+c.azienda+' salvata');if(verifyQ[0]===c.id)verifyQ.shift();if(verifyQ.length)nextVerify();else openCard(c.id,false);return}if(openId&&!verifyQ.length)closeSheet()},
  onStatus:s=>{$('#attrib').innerHTML=s==='tiles'?'© OpenStreetMap':'Mappa schematica (offline) · con internet vedi le strade'}
 });
 map.readColors();renderTop();setView('map');refreshMarkers();
 map.fit(allClients().filter(hasPos),40,11);
 setTimeout(()=>{if(map.tileMode==='try'&&!map.tileOk)$('#attrib').textContent='Mappa schematica (offline) · con internet vedi le strade'},4000);
-if(S.settings.trip===null)setTimeout(askTrip,500);else if(S.settings.trip)startTrip();
+if(S.settings.trip===null)setTimeout(askTrip,500);else startGPS();
+setTimeout(()=>{if(!geoBusy&&navigator.onLine!==false&&P()&&P().clients.some(c=>!hasPos(c)))renderBanner()},1500);
 if('serviceWorker' in navigator&&location.protocol==='https:'&&!window.claude)navigator.serviceWorker.register('sw.js').catch(()=>{});
 
 </script>
