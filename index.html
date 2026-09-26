@@ -577,17 +577,20 @@ async function geocode(c){const cands=[];const add=(arr,how,k)=>arr.slice(0,2).f
  const place=[c.cap,c.comune,c.provincia].filter(Boolean).join(' ');
  if(c.indirizzo){const r=(await nomi([c.indirizzo,place].filter(Boolean).join(', '))).filter(x=>!x.town);add(r,'Trovata dall’indirizzo','addr');
   if(!r.length&&place){const via=c.indirizzo.replace(/[\s,]+(n\.?|nr\.?|civ\.?)?\s*\d+\s*[a-z]?(\/\s*\w+)?\s*$/i,'').trim();if(via&&via!==c.indirizzo)add((await nomi(via+', '+place)).filter(x=>!x.town),'Trovata dalla via (senza numero civico)','addr')}}
- if(c.azienda){const r=(await nomi([c.azienda,c.comune||c.provincia].filter(Boolean).join(', '))).filter(x=>!x.town);add(r,'Trovata cercando il nome dell’azienda','name')}
+ if(c.azienda&&!cands.some(x=>x.k==='addr')){const r=(await nomi([c.azienda,c.comune||c.provincia].filter(Boolean).join(', '))).filter(x=>!x.town);add(r,'Trovata cercando il nome dell’azienda','name')}
  let g=gazFind(c.comune);if(!g&&!c.comune&&c.indirizzo){const a=' '+norm(c.indirizzo)+' ';const h=GAZ.filter(x=>a.includes(' '+norm(x[0])+' ')).sort((x,y)=>y[0].length-x[0].length)[0];if(h)g={name:h[0],prov:h[1],lat:h[2],lon:h[3]}}let town=g?{lat:g.lat,lon:g.lon,label:'Centro di '+g.name+' ('+g.prov+')'}:null;
  if(!town&&(c.comune||c.cap)&&netOK){const t=(await nomi([c.cap,c.comune,c.provincia,'Italia'].filter(Boolean).join(', ')))[0];if(t)town={lat:t.lat,lon:t.lon,label:t.label}}
  if(town)cands.push({...town,how:'Posizione approssimativa sul comune',k:'town'});
  let status='missing';const a=cands.find(x=>x.k==='addr'),n=cands.find(x=>x.k==='name');
  if(a&&(!n||haversine(a,n)<0.4))status='ok';else if(a||n)status='confirm';else if(town)status='approx';
  const best=cands[0];if(best){c.lat=best.lat;c.lon=best.lon}else{delete c.lat;delete c.lon}c.geo={status,label:best?best.label:'',how:best?best.how:'',cands,ci:0}}
-async function geocodeAll(list,title){if(!list.length)return;geoBusy=true;netOK=true;netFail=0;$('#modal').dataset.lock='1';
- openModal(`<h3>${esc(title)}</h3><p id="geoMsg">0 di ${list.length}</p><div class="progress"><i id="geoBar"></i></div><p style="margin-top:10px;font-size:12.5px">Uso l’indirizzo e il nome dell’azienda. Se non sono sicuro, alla fine ti chiedo conferma. Tieni l’app aperta.</p>`);
+let wakeLock=null;
+async function keepAwake(on){try{if(on){if(!wakeLock&&'wakeLock' in navigator){wakeLock=await navigator.wakeLock.request('screen');wakeLock.addEventListener('release',()=>{wakeLock=null})}}else if(wakeLock){await wakeLock.release();wakeLock=null}}catch(e){}}
+document.addEventListener('visibilitychange',()=>{if(document.visibilityState==='visible'&&geoBusy)keepAwake(true)});
+async function geocodeAll(list,title){if(!list.length)return;geoBusy=true;keepAwake(true);netOK=true;netFail=0;$('#modal').dataset.lock='1';
+ openModal(`<h3>${esc(title)}</h3><p id="geoMsg">0 di ${list.length}</p><div class="progress"><i id="geoBar"></i></div><p style="margin-top:10px;font-size:12.5px">Uso l’indirizzo e il nome dell’azienda. Se non sono sicuro, alla fine ti chiedo conferma.</p><p style="margin-top:6px;font-size:12.5px"><b>Lo schermo resta acceso finché non ho finito.</b> Se chiudi l’app, alla prossima apertura riprendo da dove ero rimasto.</p>`);
  for(let i=0;i<list.length;i++){await geocode(list[i]);if(i%5===4)save();const m=$('#geoMsg');if(m){m.textContent=`${i+1} di ${list.length} · ${list[i].azienda}`;$('#geoBar').style.width=((i+1)/list.length*100)+'%'}if(!netOK&&!hasPos(list[i])&&i>=2&&list.slice(0,i+1).every(c=>!hasPos(c)))break}
- geoBusy=false;save();delete $('#modal').dataset.lock;renderTop();refreshMarkers()}
+ geoBusy=false;keepAwake(false);save();delete $('#modal').dataset.lock;renderTop();refreshMarkers()}
 async function retryGeo(){const p=P();const todo=p.clients.filter(c=>!hasPos(c));if(!todo.length)return;if(navigator.onLine===false){toast('Serve internet per cercare gli indirizzi');return}
  await geocodeAll(todo,'Cerco di nuovo i clienti sulla mappa…');const still=todo.filter(c=>!hasPos(c)).length,k=todo.filter(needsCheck).length;
  map.fit(p.clients.filter(hasPos));
@@ -690,7 +693,7 @@ map.readColors();renderTop();setView('map');refreshMarkers();
 map.fit(allClients().filter(hasPos),40,11);
 setTimeout(()=>{if(map.tileMode==='try'&&!map.tileOk)$('#attrib').textContent='Mappa schematica (offline) · con internet vedi le strade'},4000);
 if(S.settings.trip===null)setTimeout(askTrip,500);else startGPS();
-setTimeout(()=>{if(!geoBusy&&navigator.onLine!==false&&P()&&P().clients.some(c=>!hasPos(c)))renderBanner()},1500);
+setTimeout(()=>{if(geoBusy||navigator.onLine===false||!P())return;const todo=P().clients.filter(c=>!hasPos(c)&&!c.geo);if(todo.length)geocodeAll(todo,'Riprendo a mettere i clienti sulla mappa…').then(()=>{map.fit(P().clients.filter(hasPos));toast('Clienti sulla mappa aggiornati')});else renderBanner()},1500);
 if('serviceWorker' in navigator&&location.protocol==='https:'&&!window.claude)navigator.serviceWorker.register('sw.js').catch(()=>{});
 
 </script>
