@@ -1,4 +1,4 @@
-<!doctype html><!-- v4 --><html lang="it"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover"><meta name="theme-color" content="#0E4D64"><meta name="description" content="Mappa dei clienti per agenti di commercio"><meta name="apple-mobile-web-app-capable" content="yes"><meta name="apple-mobile-web-app-title" content="InZona"><link rel="manifest" href="manifest.webmanifest"><link rel="apple-touch-icon" href="icon-192.png"><link rel="icon" href="icon.svg"><title>InZona</title>
+<!doctype html><!-- v5 --><html lang="it"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover"><meta name="theme-color" content="#0E4D64"><meta name="description" content="Mappa dei clienti per agenti di commercio"><meta name="apple-mobile-web-app-capable" content="yes"><meta name="apple-mobile-web-app-title" content="InZona"><link rel="manifest" href="manifest.webmanifest"><link rel="apple-touch-icon" href="icon-192.png"><link rel="icon" href="icon.svg"><title>InZona</title>
 <link rel="preconnect" href="https://fonts.googleapis.com"><link rel="preconnect" href="https://fonts.gstatic.com" crossorigin><link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Archivo:wdth,wght@62..125,400..800&display=swap">
 <style>
 :root{padding:env(safe-area-inset-top) 0 0}
@@ -390,9 +390,9 @@ const hasPos=c=>typeof c.lat==='number'&&typeof c.lon==='number';
 /* ---------- interfaccia di base ---------- */
 let map,view='map',openId=null,near={origin:'me',radius:10},pickFor=null,verifyQ=[],listQ={q:'',f:'all',sort:'az'};
 function toast(msg,ms=2600){const t=$('#toast');t.textContent=msg;t.hidden=false;clearTimeout(toast.h);toast.h=setTimeout(()=>t.hidden=true,ms)}
-function openModal(html){$('#modal').innerHTML=html;$('#scrim').hidden=false;const f=$('#modal').querySelector('input,select,button');f&&f.focus({preventScroll:true})}
+function openModal(html){if(typeof LIC!=='undefined'&&LIC.locked&&!openModal.allow){showLock();return}$('#modal').innerHTML=html;$('#scrim').hidden=false;const f=$('#modal').querySelector('input,select,button');f&&f.focus({preventScroll:true})}
 function ask(msg,{ok='Conferma',danger=false,input=null}={}){return new Promise(res=>{ask.res=res;openModal(`<h3>${esc(msg)}</h3>${input!==null?`<div class="field" style="margin:10px 0 4px"><input id="askIn" value="${esc(input)}"></div>`:''}<div class="stack" style="margin-top:14px"><button class="btn ${danger?'signal':'primary'} block" data-act="askOk">${esc(ok)}</button><button class="btn ghost block" data-act="askNo">Annulla</button></div>`);const i=$('#askIn');if(i){i.focus();i.select()}})}
-function closeModal(){$('#scrim').hidden=true;$('#modal').innerHTML=''}
+function closeModal(){if(typeof LIC!=='undefined'&&LIC.locked)return;$('#scrim').hidden=true;$('#modal').innerHTML=''}
 $('#scrim').addEventListener('click',e=>{if(e.target.id==='scrim'&&!$('#modal').dataset.lock){closeModal();if(ask.res){ask.res(false);ask.res=null}}});
 function renderNav(){const n=allClients().filter(needsCheck).length;const tabs=[['map','Mappa',IC.map],['list','Clienti',IC.list],['near','Vicini',IC.near],['history','Cronologia',IC.hist],['more','Elenchi',IC.folder]];
  $('#nav').innerHTML=tabs.map(([k,l,ic])=>`<button data-act="tab" data-v="${k}" ${view===k?'aria-current="page"':''}>${ic}<span>${l}</span>${k==='list'&&n?`<span class="badge num">${n}</span>`:''}</button>`).join('')}
@@ -523,6 +523,7 @@ function renderMore(){const el=$('#view-more');
  <div class="grid2"><button class="btn primary" data-act="import">${IC.up} Carica un elenco</button><button class="btn" data-act="newProj">${IC.plus} Elenco vuoto</button></div>${S.projects.some(p=>p.sample)?`<p class="note" style="margin:0">Per togliere i clienti di esempio tocca <b>Elimina</b> sull’elenco “Esempio”. Se non hai altri elenchi, ne resta uno vuoto, “I miei clienti”, dove aggiungere i tuoi.</p>`:''}
  <div class="section"><h3>File consigliati</h3><div class="stack" style="font-size:14px"><div><b>Excel (.xlsx)</b> – il migliore: una riga per cliente, intestazioni in prima riga.</div><div><b>CSV (.csv)</b> – esportabile da qualsiasi gestionale o CRM.</div><div><b>Word (.docx)</b> – va bene se i clienti sono in una tabella.</div><div><b>Rubrica (.vcf)</b> – contatti esportati dal telefono.</div><div style="color:var(--muted)">Colonne utili: Ragione sociale, Referente, Cellulare, Telefono, E-mail, Indirizzo, CAP, Comune, Provincia, Note. PDF e .doc vecchi: salvali prima come .xlsx o .docx.</div></div></div>
  <div class="section"><h3>Backup e Google Drive</h3><p class="meta" style="margin:0 0 10px">Salva tutto (elenchi, modifiche, cronologia) in un unico file da tenere nella cartella Drive “InZona – Progetti”.</p><div class="grid2"><button class="btn" data-act="backup">${IC.down} Salva backup</button><button class="btn" data-act="restore">${IC.up} Ripristina</button></div></div>
+ ${licenseSection()}
  <div class="section"><h3>Impostazioni</h3><p class="meta" style="margin:0">InZona 1.0 · i tuoi dati restano solo su questo telefono · <a href="privacy.html" target="_blank" rel="noopener">Informativa privacy</a> · <a href="mailto:Paolo@Bermac.it?subject=InZona">Assistenza</a></p><button class="btn ghost danger" style="margin-top:8px;padding-left:0" data-act="resetAll">Ripristina i dati di esempio</button></div>
  </div>`}
 
@@ -641,6 +642,7 @@ const A={
  askNo:()=>{closeModal();ask.res&&ask.res(false);ask.res=null},
  tab:d=>{near.ids=null;map.circle=null;refreshMarkers();setView(d.v);if(d.v==='map'&&autoNear&&S.me)applyAutoNear(false)},
  retryGeo:()=>retryGeo(),
+ buy:()=>buy(), restoreBuy:()=>restoreBuy(),
  gpsRetry:()=>{gpsState='wait';firstFix=true;autoNear=true;if(watchId!=null){navigator.geolocation.clearWatch(watchId);watchId=null}startGPS();locate(true)},
  nearBarClose:()=>{autoNear=false;near.ids=null;map.circle=null;refreshMarkers();renderNearBar()},
  nearRad:()=>{const R=[5,10,20,30,50];near.radius=R[(R.indexOf(near.radius)+1)%R.length];S.settings.radius=near.radius;save();applyAutoNear(true)},
@@ -682,6 +684,39 @@ $('#fileIn').addEventListener('change',e=>{const f=e.target.files[0];if(f)onFile
 $('#backupIn').addEventListener('change',async e=>{const f=e.target.files[0];if(!f)return;try{const d=JSON.parse(await f.text());if(!d.projects)throw 0;S=d;save();renderTop();refreshMarkers();renderMore();toast('Backup ripristinato')}catch(x){toast('Questo file non è un backup di InZona')}});
 document.addEventListener('keydown',e=>{if(e.key==='Escape'){if(!$('#scrim').hidden&&!$('#modal').dataset.lock)closeModal();else if(openId)closeSheet()}});
 
+/* ---------- prova gratuita e sblocco (Google Play Billing) ---------- */
+const TRIAL_DAYS=15, SKU='inzona_sblocco', PLAY_URL='https://play.google.com/store/apps/details?id=it.bermac.inzona';
+const LIC={locked:false,owned:false,price:'19,99 €',svc:null,ready:false};
+function lsGet(k){try{return localStorage.getItem(k)}catch(e){return null}}
+function lsSet(k,v){try{localStorage.setItem(k,v)}catch(e){}}
+function trialStart(){let t=+lsGet('inzona.trial')||0;if(S.trialStart&&(!t||S.trialStart<t))t=S.trialStart;if(!t){t=Date.now()}lsSet('inzona.trial',t);if(S.trialStart!==t){S.trialStart=t;save()}return t}
+function trialLeft(){return Math.max(0,TRIAL_DAYS-Math.floor((Date.now()-trialStart())/DAY))}
+async function billing(){if(LIC.svc)return LIC.svc;if(!('getDigitalGoodsService' in window))return null;try{LIC.svc=await window.getDigitalGoodsService('https://play.google.com/billing');return LIC.svc}catch(e){return null}}
+async function checkOwned(){const s=await billing();if(!s)return false;try{const p=await s.listPurchases();return p.some(x=>x.itemId===SKU)}catch(e){return false}}
+async function loadPrice(){const s=await billing();if(!s)return;try{const d=(await s.getDetails([SKU]))[0];if(d&&d.price){LIC.price=new Intl.NumberFormat('it-IT',{style:'currency',currency:d.price.currency}).format(+d.price.value)}}catch(e){}}
+function setOwned(){LIC.owned=true;LIC.locked=false;lsSet('inzona.owned','1');S.owned=true;save()}
+async function licenseInit(){trialStart();if(lsGet('inzona.owned')==='1'||S.owned)LIC.owned=true;
+ LIC.locked=!LIC.owned&&trialLeft()<=0;if(LIC.locked)showLock();
+ await loadPrice();
+ const own=await checkOwned();if(own&&!LIC.owned){setOwned();closeModal();toast('InZona è sbloccata. Grazie!')}
+ LIC.ready=true;if(view==='more')renderMore();if(LIC.locked)showLock();
+ else if(!LIC.owned){const n=trialLeft();if(n<=5)setTimeout(()=>toast(n===1?'Ultimo giorno di prova gratuita':`Prova gratuita: mancano ${n} giorni`,4000),2500)}}
+function showLock(){$('#modal').dataset.lock='1';openModal.allow=true;openModal(`<div class="brand" style="margin-bottom:10px">${$('.brand svg').outerHTML}<span class="word">in<b>Zona</b></span></div>
+ <h3>La prova gratuita di ${TRIAL_DAYS} giorni è finita</h3>
+ <p>Sblocca InZona con un solo pagamento e continua a usarla per sempre, senza abbonamento.</p>
+ <ul style="margin:0 0 14px;padding-left:20px;font-size:14.5px"><li>Tutti i tuoi clienti sulla mappa</li><li>Clienti vicini, giri e navigatore</li><li>Cronologia delle visite ed elenchi illimitati</li></ul>
+ <div class="stack">${'getDigitalGoodsService' in window?`<button class="btn primary block" data-act="buy">${IC.check} Sblocca InZona – ${esc(LIC.price)}</button><button class="btn block" data-act="restoreBuy">Ho già acquistato: ripristina</button>`:`<a class="btn primary block" href="${PLAY_URL}" target="_blank" rel="noopener">Scarica InZona da Google Play</a>`}
+ <button class="btn ghost block" data-act="backup">${IC.down} Salva una copia dei miei dati</button></div>
+ <p style="margin-top:10px;font-size:12.5px">I tuoi elenchi e la cronologia restano sul telefono e tornano disponibili subito dopo lo sblocco.</p>`);openModal.allow=false}
+async function buy(){const s=await billing();if(!s||!window.PaymentRequest){location.href=PLAY_URL;return}
+ try{const req=new PaymentRequest([{supportedMethods:'https://play.google.com/billing',data:{sku:SKU}}],{total:{label:'Totale',amount:{currency:'EUR',value:'0'}}});
+  const res=await req.show();await res.complete('success');
+  if(await checkOwned()||res.details){setOwned();delete $('#modal').dataset.lock;closeModal();toast('InZona è sbloccata. Grazie!');if(view==='more')renderMore()}}
+ catch(e){if(e&&e.name==='AbortError')return;toast('Acquisto non completato. Riprova.')}}
+async function restoreBuy(){toast('Controllo gli acquisti…',1500);if(await checkOwned()){setOwned();delete $('#modal').dataset.lock;closeModal();toast('Acquisto ripristinato. Grazie!');if(view==='more')renderMore()}else toast('Nessun acquisto trovato su questo account Google')}
+function licenseSection(){if(LIC.owned)return `<div class="section"><h3>Licenza</h3><p class="meta" style="margin:0"><span class="pill p-ok">Sbloccata</span> Grazie per aver acquistato InZona.</p></div>`;
+ const n=trialLeft();return `<div class="section"><h3>Prova gratuita</h3><p class="meta" style="margin:0 0 10px">${n>0?`Mancano <b>${n}</b> ${n===1?'giorno':'giorni'} di prova. Poi InZona si sblocca con un solo pagamento, senza abbonamento.`:'La prova è finita.'}</p><div class="grid2"><button class="btn primary" data-act="buy">${IC.check} Sblocca – ${esc(LIC.price)}</button><button class="btn" data-act="restoreBuy">Ripristina acquisto</button></div></div>`}
+
 /* ---------- avvio ---------- */
 S=load()||seed();near.radius=S.settings.radius||10;
 map=new MapView($('#map'),{
@@ -692,8 +727,9 @@ map=new MapView($('#map'),{
 map.readColors();renderTop();setView('map');refreshMarkers();
 map.fit(allClients().filter(hasPos),40,11);
 setTimeout(()=>{if(map.tileMode==='try'&&!map.tileOk)$('#attrib').textContent='Mappa schematica (offline) · con internet vedi le strade'},4000);
-if(S.settings.trip===null)setTimeout(askTrip,500);else startGPS();
-setTimeout(()=>{if(geoBusy||navigator.onLine===false||!P())return;const todo=P().clients.filter(c=>!hasPos(c)&&!c.geo);if(todo.length)geocodeAll(todo,'Riprendo a mettere i clienti sulla mappa…').then(()=>{map.fit(P().clients.filter(hasPos));toast('Clienti sulla mappa aggiornati')});else renderBanner()},1500);
+licenseInit();
+if(LIC.locked)startGPS();else if(S.settings.trip===null)setTimeout(askTrip,500);else startGPS();
+setTimeout(()=>{if(LIC.locked||geoBusy||navigator.onLine===false||!P())return;const todo=P().clients.filter(c=>!hasPos(c)&&!c.geo);if(todo.length)geocodeAll(todo,'Riprendo a mettere i clienti sulla mappa…').then(()=>{map.fit(P().clients.filter(hasPos));toast('Clienti sulla mappa aggiornati')});else renderBanner()},1500);
 if('serviceWorker' in navigator&&location.protocol==='https:'&&!window.claude)navigator.serviceWorker.register('sw.js').catch(()=>{});
 
 </script>
