@@ -1,8 +1,11 @@
- [{
+[{
   "relation": ["delegate_permission/common.handle_all_urls"],
   "target": {
     "namespace": "android_app",
     "package_name": "it.bermac.inzona",
-    "sha256_cert_fingerprints": ["0F:DE:D7:68:9B:C0:F6:1A:1B:E0:E8:33:10:3A:D6:99:C0:79:0A:A7:FD:CA:66:5C:F0:39:87:7C:66:E2:9E:32"]
+    "sha256_cert_fingerprints": [
+      "BE:B4:BE:87:A7:6B:E3:70:FE:39:27:54:08:F1:37:96:A2:1D:55:83:D8:89:B1:39:D8:1B:DB:3B:12:DD:E3:0B",
+      "8C:09:E0:E2:29:59:A5:DB:1A:CE:ED:4C:BE:31:F9:35:EA:BE:07:1D:CC:FF:AF:95:57:8B:F1:09:EE:80:58:07"
+    ]
   }
 }]
